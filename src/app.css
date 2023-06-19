@@ -1,0 +1,34 @@
+:root {
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+}
+
+:root._3xpl-screensaver-util_ {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: #0E0E0E;
+
+    max-width: 100vw;
+    max-height: 100vh;
+}
+
+body._3xpl-screensaver-util_ {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: #0E0E0E;
+}
+
+#_3xpl-screensaver_ {
+    box-sizing: border-box;
+    margin: 0;
+
+    width: 100%;
+    height: 100%;
+
+    background: #0E0E0E;
+    padding: 2.5rem;
+}
