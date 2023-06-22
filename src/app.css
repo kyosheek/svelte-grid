@@ -1,8 +1,3 @@
-:root {
-    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-    line-height: 1.5;
-}
-
 :root._3xpl-screensaver-util_ {
     margin: 0;
     padding: 0;
@@ -23,12 +18,22 @@ body._3xpl-screensaver-util_ {
 }
 
 #_3xpl-screensaver_ {
+    --c-bg: #0E0E0E;
+    --c-bg_card_empty: rgba(255, 255, 255, 0.05);
+    --c-accent: #BBED0D;
+}
+
+#_3xpl-screensaver_ {
     box-sizing: border-box;
     margin: 0;
+
+    line-height: 1.5;
+    font-family: "Satoshi Variable", Inter, Helvetica, system-ui, sans-serif;
 
     width: 100%;
     height: 100%;
 
-    background: #0E0E0E;
     padding: 2.5rem;
+
+    background: var(--c-bg);
 }
