@@ -28,114 +28,126 @@
     });
 
     let isCaptured = false;
-    let grabbedObject = null;
-
-    let grabbedCardEl = null;
 
     let hoveredIdx = null;
     let grabbedIdx = null;
 
-    $: grabbedObject = cards[grabbedIdx] ?? null;
-    $: grabbedCardEl = grid?.children?.item(grabbedIdx) ?? null;
-
-    $: hoveredObject = cards[hoveredIdx] ?? null;
-    $: hoveredCardEl = grid?.children?.item(hoveredIdx) ?? null;
-
-    const assignHoverOver = (idx) => hoveredIdx = idx;
-
-    const handleMouseDown = (idx) => {
-        isCaptured = true;
-        cards[idx].grabbed = true;
-        grabbedIdx = idx;
+    const assignHoverOver = (idx) => {
+        if (!cards[idx].moving) hoveredIdx = idx;
     }
 
-    const animateCard = (el, keyframes, timing, newObj) => {
-        newObj.moving = true;
-        cards[newObj.idx] = newObj;
-
-        const animation = el.animate(keyframes, timing);
-        el.animation = animation;
-        animation.onfinish = () => {
-            animation.oncancel = null;
-            animation.onfinish = null;
-            animation.commitStyles();
-            el.style = `grid-area: ${el.style.gridArea}`;
-
-            cards[newObj.idx].moving = false;
-            if (grabbedIdx !== newObj.idx) {
-                cards[newObj.idx].grabbed = false;
-            }
+    const handleMouseDown = (evt, idx) => {
+        if ((evt.which || evt.button) === 1) {
+            const { pageX, pageY } = evt;
+            isCaptured = true;
+            const objCopy = Object.assign({}, cards[idx]);
+            objCopy.grabbed = true;
+            objCopy.moveX = pageX;
+            objCopy.moveY = pageY;
+            cards[idx] = objCopy;
+            grabbedIdx = idx;
         }
     }
 
-    const handleMouseMove = () => {
+    const moveGrabbedCard = (evt) => {
+        const { pageX, pageY } = evt;
+        const copyObj = Object.assign({}, cards[grabbedIdx]);
+        const { moveX, moveY } = copyObj;
+        copyObj.translateX = (pageX - moveX) + 'px';
+        copyObj.translateY = (pageY - moveY) + 'px';
+        cards[grabbedIdx] = copyObj;
+    }
+
+    const resetCardsPosition = () => {
+        cards.forEach((card, idx) => {
+            if (card.preview && card.idx !== hoveredIdx) {
+                resetCardPreview(idx);
+            }
+        });
+    }
+
+    const resetPreview = (obj) => {
+        obj.preview = false;
+        obj.previewX = null;
+        obj.previewY = null;
+    }
+
+    const resetCardPreview = (idx) => {
+        const newCardObj = Object.assign({}, cards[idx]);
+        resetPreview(newCardObj);
+        cards[idx] = newCardObj;
+    }
+
+    const handleMouseMove = (evt) => {
         if (isCaptured) {
-            if (hoveredIdx !== grabbedIdx
-                && hoveredObject
-                && !hoveredObject.moving) {
+            moveGrabbedCard(evt);
 
-                const newHovObj = Object.assign({}, cards[grabbedIdx]);
-                const newGrbObj = Object.assign({}, cards[hoveredIdx]);
+            if (hoveredIdx != null) resetCardsPosition();
 
-                newHovObj.idx = hoveredObject.idx;
-                newHovObj.grabbed = false;
-
-                newGrbObj.idx = grabbedObject.idx;
-                newGrbObj.grabbed = true;
-
-                const hoveredCardRect = hoveredCardEl.getBoundingClientRect();
-                const grabbedCardRect = grabbedCardEl.getBoundingClientRect();
-
-                const hoveredCardTransformX = newHovObj.x - hoveredCardRect.left;
-                const hoveredCardTransformY = newHovObj.y - hoveredCardRect.top
-                const movableCardTransformX = newGrbObj.x - grabbedCardRect.left;
-                const movableCardTransformY = newGrbObj.y - grabbedCardRect.top;
-
-                if (grabbedCardEl.animation && grabbedCardEl.animation.playState !== 'finished') grabbedCardEl.animation.cancel();
-
-                hoveredCardEl.style = `
-                    position: fixed;
-                    width: ${hoveredCardRect.width}px;
-                    height: ${hoveredCardRect.height}px;
-                    top: ${hoveredCardRect.top}px;
-                    left: ${hoveredCardRect.left}px;
-                `;
-                grabbedCardEl.style = `
-                    position: fixed;
-                    width: ${grabbedCardRect.width}px;
-                    height: ${grabbedCardRect.height}px;
-                    top: ${grabbedCardRect.top}px;
-                    left: ${grabbedCardRect.left}px;
-                `;
-
-                const hoveredCardKeyframes = [
-                    { transform: `translate(0, 0)` },
-                    { transform: `translate(${hoveredCardTransformX}px, ${hoveredCardTransformY}px)` },
-                ];
-
-                const grabbedCardKeyframes = [
-                    { transform: `translate(0, 0)` },
-                    { transform: `translate(${movableCardTransformX}px, ${movableCardTransformY}px)` },
-                ];
-
-                const keyframesTiming = {
-                    duration: 200,
-                    iterations: 1
-                };
-
-                hoveredIdx = null;
-
-                animateCard(grabbedCardEl, grabbedCardKeyframes, keyframesTiming, newGrbObj);
-                animateCard(hoveredCardEl, hoveredCardKeyframes, keyframesTiming, newHovObj);
+            if (hoveredIdx != null
+                && hoveredIdx !== grabbedIdx
+                && !cards[hoveredIdx].moving
+                && !cards[hoveredIdx].preview
+            ) {
+                const previewObj = Object.assign({}, cards[grabbedIdx]);
+                const newHovObj = Object.assign({}, cards[hoveredIdx]);
+                newHovObj.preview = true;
+                newHovObj.moving = true;
+                newHovObj.previewX = previewObj.x;
+                newHovObj.previewY = previewObj.y;
+                cards[hoveredIdx] = newHovObj;
             }
         }
     }
 
-    const handleMouseUp = () => {
-        isCaptured = false;
-        if (grabbedIdx) cards[grabbedIdx].grabbed = false;
+    const swapCards = () => {
+        const grabbedObj = cards[grabbedIdx];
+        const newGrabbedObj = Object.assign({}, cards[grabbedIdx]);
+
+        const hoveredObj = cards[hoveredIdx];
+        const newHoveredObj = Object.assign({}, cards[hoveredIdx]);
+
+        newGrabbedObj.grabbed = false;
+        newGrabbedObj.swapped = true;
+        newGrabbedObj.rowStart = hoveredObj.rowStart;
+        newGrabbedObj.rowEnd = hoveredObj.rowEnd;
+        newGrabbedObj.colStart = hoveredObj.colStart;
+        newGrabbedObj.colEnd = hoveredObj.colEnd;
+        newGrabbedObj.x = hoveredObj.x;
+        newGrabbedObj.y = hoveredObj.y;
+        newGrabbedObj.translateX = null;
+        newGrabbedObj.translateY = null;
+
+        resetPreview(newHoveredObj);
+        newHoveredObj.rowStart = grabbedObj.rowStart;
+        newHoveredObj.rowEnd = grabbedObj.rowEnd;
+        newHoveredObj.colStart = grabbedObj.colStart;
+        newHoveredObj.colEnd = grabbedObj.colEnd;
+        newHoveredObj.x = grabbedObj.x;
+        newHoveredObj.y = grabbedObj.y;
+
+        const _gi = grabbedIdx;
+        const _hi = hoveredIdx;
+
+        [ cards[_gi], cards[_hi] ] = [ newGrabbedObj, newHoveredObj ];
+
         grabbedIdx = null;
         hoveredIdx = null;
+        isCaptured = false;
+    }
+
+    const handleMouseUp = (evt) => {
+        if ((evt.which || evt.button) === 1 && isCaptured) {
+            isCaptured = false;
+            if (grabbedIdx !== null) {
+                if (hoveredIdx !== null && hoveredIdx !== grabbedIdx) swapCards();
+                else {
+                    cards[grabbedIdx].grabbed = false;
+                    resetCardsPosition();
+                }
+            }
+            grabbedIdx = hoveredIdx = null;
+        }
     }
 
     const recalcCardsDimensions = () => {
@@ -150,19 +162,18 @@
         });
     }
 
-    onMount(() => {
-        recalcCardsDimensions();
-    });
+    onMount(() => recalcCardsDimensions());
 </script>
 
-<svelte:window on:resize={recalcCardsDimensions} on:mouseup={handleMouseUp} />
+<svelte:window on:resize={recalcCardsDimensions}
+               on:mouseup={handleMouseUp} />
 
 <div class="_3xpl-screensaver_grid"
      bind:this={grid}
      on:mousemove={handleMouseMove}>
     {#each cards as card, idx}
         <Card props="{card}"
-              mousedownHandler={() => handleMouseDown(card.idx)}
+              mousedownHandler={(evt) => handleMouseDown(evt, card.idx)}
               mouseoverHandler={() => assignHoverOver(card.idx)} />
     {/each}
 </div>
