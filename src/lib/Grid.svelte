@@ -2,6 +2,10 @@
     import Card from "./Card.svelte";
     import { onMount } from "svelte";
 
+    import { mouse } from "./stores/mouse.js";
+    let cursor = 'default';
+    mouse.subscribe(val => cursor = val.cursor);
+
     let gridSize = 16;
     let rowSize = 4;
     let matrix = new Array(gridSize).fill(null);
@@ -38,6 +42,12 @@
 
     const handleMouseDown = (evt, idx) => {
         if ((evt.which || evt.button) === 1) {
+            mouse.update(() => {
+                return {
+                    grabbing: true,
+                    cursor: 'grabbing'
+                };
+            });
             const { pageX, pageY } = evt;
             isCaptured = true;
             const objCopy = Object.assign({}, cards[idx]);
@@ -138,6 +148,12 @@
 
     const handleMouseUp = (evt) => {
         if ((evt.which || evt.button) === 1 && isCaptured) {
+            mouse.update(() => {
+                return {
+                    grabbing: false,
+                    cursor: 'default'
+                };
+            });
             isCaptured = false;
             if (grabbedIdx !== null) {
                 if (hoveredIdx !== null && hoveredIdx !== grabbedIdx) swapCards();
@@ -170,7 +186,8 @@
 
 <div class="_3xpl-screensaver_grid"
      bind:this={grid}
-     on:mousemove={handleMouseMove}>
+     on:mousemove={handleMouseMove}
+     style="cursor: {cursor}">
     {#each cards as card, idx}
         <Card props="{card}"
               mousedownHandler={(evt) => handleMouseDown(evt, card.idx)}

@@ -1,5 +1,11 @@
 <script lang="ts">
+    import { mouse } from "./stores/mouse.js";
     export let props, mouseoverHandler, mousedownHandler;
+
+    let cursor, grabbing;
+    mouse.subscribe(val => {
+        ({ cursor, grabbing } = val);
+    });
 
     const dragOffset = 10;
 
@@ -11,14 +17,31 @@
         const x = evt.clientX - rect.left;
         const y = evt.clientY - rect.top;
 
-        if (x <= dragOffset || (rect.width - x) <= dragOffset) {
-            card.style.cursor = 'col-resize';
-        }
-        else if (y <= dragOffset || (rect.height - y) <= dragOffset) {
-            card.style.cursor = 'row-resize';
-        }
-        else {
-            card.style.cursor = 'grab';
+        if (!grabbing) {
+            if (x <= dragOffset || (rect.width - x) <= dragOffset) {
+                mouse.update((val) => {
+                    return {
+                        grabbing: val.grabbing,
+                        cursor: 'col-resize'
+                    };
+                });
+            }
+            else if (y <= dragOffset || (rect.height - y) <= dragOffset) {
+                mouse.update((val) => {
+                    return {
+                        grabbing: val.grabbing,
+                        cursor: 'row-resize'
+                    };
+                });
+            }
+            else {
+                mouse.update((val) => {
+                    return {
+                        grabbing: val.grabbing,
+                        cursor: 'grab'
+                    };
+                });
+            }
         }
     }
 
@@ -28,15 +51,21 @@
 
     const handleMouseLeave = () => {
         card.removeEventListener('mousemove', handleMouseMove);
-        card.style.cursor = null;
+        if (!grabbing) mouse.update((val) => {
+            return {
+                grabbing: val.grabbing,
+                cursor: 'default'
+            };
+        });
     }
 
     let wasGrabbed = false;
     let inPreview = false;
 
-    $: grabbed = props?.grabbed ?? false;
     $: tx = props?.translateX ?? null;
     $: ty = props?.translateY ?? null;
+
+    $: grabbed = props?.grabbed ?? false;
     $: grabbed && liftCard();
     $: (card && wasGrabbed && !grabbed) && returnCard();
     $: (card && grabbed && tx && ty) && moveCard();
@@ -145,7 +174,7 @@
             color: white;
             border: 1px solid transparent;
 
-            cursor: pointer;
+            cursor: inherit;
 
             grid-area: 0/1/0/1;
 
