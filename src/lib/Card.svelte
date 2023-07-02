@@ -1,165 +1,241 @@
-<script lang="ts">
-    import { mouse } from "./stores/mouse.js";
-    export let props, mouseoverHandler, mousedownHandler;
+<script>
+    export let props, mouse, mousePos, grabPos, mousedownHandler;
 
-    let cursor, grabbing;
-    mouse.subscribe(val => {
-        ({ cursor, grabbing } = val);
-    });
+    $: cursor = mouse.cursor;
+    $: mouseGrabbing = mouse.grabbing;
+    $: preview = props.preview;
+    $: grabbed = props.grabbed;
+    $: swapping = props.swapping;
+    $: gridArea = `${props.rowStart}/${props.colStart}/${props.rowEnd}/${props.colEnd}`;
 
-    const dragOffset = 10;
+    export let grabbed, preview, mouseGrabbing, swapping, gridArea;
 
     let card;
-
-    const handleMouseMove = (evt) => {
-        const { currentTarget } = evt;
-        const rect = currentTarget.getBoundingClientRect();
-        const x = evt.clientX - rect.left;
-        const y = evt.clientY - rect.top;
-
-        if (!grabbing) {
-            if (x <= dragOffset || (rect.width - x) <= dragOffset) {
-                mouse.update((val) => {
-                    return {
-                        grabbing: val.grabbing,
-                        cursor: 'col-resize'
-                    };
-                });
-            }
-            else if (y <= dragOffset || (rect.height - y) <= dragOffset) {
-                mouse.update((val) => {
-                    return {
-                        grabbing: val.grabbing,
-                        cursor: 'row-resize'
-                    };
-                });
-            }
-            else {
-                mouse.update((val) => {
-                    return {
-                        grabbing: val.grabbing,
-                        cursor: 'grab'
-                    };
-                });
-            }
-        }
-    }
-
-    const handleMouseEnter = () => {
-        card.addEventListener('mousemove', handleMouseMove);
-    }
-
-    const handleMouseLeave = () => {
-        card.removeEventListener('mousemove', handleMouseMove);
-        if (!grabbing) mouse.update((val) => {
-            return {
-                grabbing: val.grabbing,
-                cursor: 'default'
-            };
-        });
-    }
-
     let wasGrabbed = false;
-    let inPreview = false;
+    let wasPreviewed = false;
+    let tx = 0;
+    let ty = 0;
+    let moving = false;
+    let left = 0;
+    let top = 0;
 
-    $: tx = props?.translateX ?? null;
-    $: ty = props?.translateY ?? null;
+    const createAnimationProps = (from = null, to, fill = 'none') => {
+        from = {
+            x: from?.x ?? 0,
+            y: from?.y ?? 0
+        };
+        to = {
+            x: to?.x ?? 0,
+            y: to?.y ?? 0
+        };
 
-    $: grabbed = props?.grabbed ?? false;
-    $: grabbed && liftCard();
-    $: (card && wasGrabbed && !grabbed) && returnCard();
-    $: (card && grabbed && tx && ty) && moveCard();
+        const keyframes = [
+            { transform: `translate(${from.x}px, ${from.y}px)` },
+            { transform: `translate(${to.x}px, ${to.y}px)` }
+        ];
 
-    $: preview = props?.preview ?? false;
-    $: preview && previewCard();
-    $: (card && inPreview && !preview) && returnCard();
+        const d = {
+            x: from.x - to.x,
+            y: from.y - to.y
+        };
 
-    const moveCard = () => {
-        if (tx != null && ty != null) {
-            card.style.transform = `translate(${tx}, ${ty})`;
+        const duration = Math.round(Math.sqrt(Math.pow(d.x, 2) + Math.pow(d.y, 2)) * 0.5);
+        const timing = { duration, iterations: 1, easing: 'linear', fill };
+
+        return { keyframes, timing };
+    }
+
+    const cancelAnimation = (fixCard = true) => {
+        tx = ty = 0;
+        if (fixCard) {
+            const rect = card.getBoundingClientRect();
+            left = rect.left;
+            top = rect.top;
+        }
+        card?.animation?.cancel();
+        card.animation = null;
+    }
+
+    const swap = () => {
+        if (wasGrabbed || card?.animation?.playState !== 'finished') {
+            cancelAnimation();
+
+            const cs = getComputedStyle(card);
+            const to = {
+                x: props.x - left,
+                y: props.y - top
+            };
+            const { keyframes, timing } = createAnimationProps(null, to);
+
+            moving = true;
+            card.animation = card.animate(keyframes, timing);
+            card.animation.onfinish = () => {
+                left = props.x;
+                top = props.y;
+                moving = false;
+                props.swapping = false;
+                wasPreviewed = false;
+            }
+        }
+        else if (card?.animation?.playState === 'finished') {
+            left = props.x;
+            top = props.y;
+            moving = false;
+            props.swapping = false;
+            wasPreviewed = false;
         }
     }
 
-    const fixCard = (clearTransform = false) => {
-        const rect = card.getBoundingClientRect();
-        card.style.position = 'fixed';
-        card.style.width = `${rect.width}px`;
-        card.style.height = `${rect.height}px`;
-        card.style.left = `${rect.left}px`;
-        card.style.top = `${rect.top}px`;
-        if (clearTransform) card.style.transform = null;
-    }
+    const moveGrabbed = () => {
+        left = props.x;
+        top = props.y;
+        if (!wasGrabbed) wasGrabbed = true;
+        const next = {
+            tx: mousePos.x - grabPos.x,
+            ty: mousePos.y - grabPos.y
+        };
+        ({ tx, ty } = next);
+    };
 
     const previewCard = () => {
-        inPreview = true;
-        fixCard();
+        if (moving) return;
 
-        const rect = card.getBoundingClientRect();
-        const dx = props.previewX - rect.left;
-        const dy = props.previewY - rect.top;
-        const endKeyframeTransform = `translate(${dx}px, ${dy}px)`;
-        const keyframes = [
-            { transform: `translate(0, 0)` },
-            { transform: endKeyframeTransform }
-        ];
-        const vec = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
-        const timing = { duration: vec * 0.66, iterations: 1, easing: 'ease-out' };
+        left = props.x;
+        top = props.y;
 
-        card.animation = card.animate(keyframes, timing);
-        card.animation.onfinish = () => card.style.transform = endKeyframeTransform;
-    }
+        const to = {
+            x: props.previewX - props.x,
+            y: props.previewY - props.y
+        };
+        const { keyframes, timing } = createAnimationProps(null, to, 'forwards');
 
-    const liftCard = () => {
-        wasGrabbed = true;
-        fixCard(true);
-    }
-
-    const returnCard = () => {
-        props.moving = true;
-
-        if (card.animation) {
-            card.animation.commitStyles();
-            card.animation.cancel();
-        }
-
-        const rect = card.getBoundingClientRect();
-        const dx = - rect.left + props.x;
-        const dy = - rect.top + props.y;
-
-        fixCard(true);
-        const keyframes = [
-            {transform: `translate(0, 0)`},
-            {transform: `translate(${dx}px, ${dy}px)`}
-        ];
-        const vec = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
-        const timing = { duration: vec * 0.75, iterations: 1, easing: 'ease-out' };
-
-        wasGrabbed = wasGrabbed ? false : wasGrabbed;
-        inPreview = inPreview ? false : inPreview;
-
+        moving = true;
         card.animation = card.animate(keyframes, timing);
         card.animation.onfinish = () => {
-            card.style = `grid-area: ${card.style.gridArea}`;
-            props.preview = (props.preview != null && props.preview) ? false : props.preview;
-            props.moving = (props.moving != null && props.moving) ? false : props.moving;
-            props.swapped = (props.swapped != null && props.swapped) ? false : props.swapped;
+            moving = false;
+            wasPreviewed = !wasPreviewed;
+        }
+    }
+
+    const returnGrabbed = () => {
+        if (moving) return;
+
+        wasGrabbed = false;
+
+        const matrix = new DOMMatrix(getComputedStyle(card).transform);
+        const from = {
+            x: matrix.e,
+            y: matrix.f
+        };
+        const { keyframes, timing } = createAnimationProps(from, null);
+
+        moving = true;
+        tx = ty = 0;
+        card.animation = card.animate(keyframes, timing);
+        card.animation.onfinish = () => {
+            moving = false;
+        }
+    };
+
+    const returnPreviewed = () => {
+        if (moving) return;
+        if (card.animation) {
+            card.animation.reverse();
+            card.animation = null;
+        }
+    };
+
+    const returnCard = () => {
+        if (card != null) {
+            if (wasGrabbed) return returnGrabbed();
+            if (wasPreviewed) return returnPreviewed();
+        }
+    }
+
+    $: {
+        if (grabbed) {
+            if (grabPos.x != null && grabPos.y != null && mousePos.x != null && mousePos.y != null) {
+                moveGrabbed();
+            }
+        }
+        else if (!swapping && wasGrabbed) {
+            returnCard();
+        }
+    }
+
+    $: {
+        let animation = card?.animation ?? null;
+        if (animation == null || animation.playState === 'finished') {
+            if (preview && !wasPreviewed) {
+                if (props.previewX != null && props.previewY != null) {
+                    previewCard();
+                }
+            }
+            else if (!swapping && !preview && wasPreviewed) {
+                returnCard();
+            }
+        }
+    }
+
+    $: swapping && swap();
+
+    const dragOffset = 20;
+
+    const mousemoveHandler = (evt) => {
+        evt.preventDefault();
+        if (!mouseGrabbing) {
+            const { currentTarget } = evt;
+            const rect = currentTarget.getBoundingClientRect();
+            const x = evt.clientX - rect.left;
+            const y = evt.clientY - rect.top;
+
+            if (x <= dragOffset || (rect.width - x) <= dragOffset) {
+                mouse = {
+                    ...mouse,
+                    cursor: 'col-resize'
+                };
+            }
+            else if (y <= dragOffset || (rect.height - y) <= dragOffset) {
+                mouse = {
+                    ...mouse,
+                    cursor: 'row-resize'
+                };
+            }
+            else {
+                mouse = {
+                    ...mouse,
+                    cursor: 'grab'
+                };
+            }
+        }
+    }
+
+    const mouseleaveHandler = (evt) => {
+        evt.preventDefault();
+        if (!mouseGrabbing) {
+            mouse = {
+                ...mouse,
+                cursor: 'default'
+            };
         }
     }
 </script>
 
 <div bind:this={card}
      class="_3xpl-screensaver_card _3xpl-screensaver_card_empty"
-     class:_3xpl-screensaver_card_grabbed={props.grabbed}
-     class:_3xpls-screensaver_card_moving={props.moving}
-     style="
-        grid-area: { props.rowStart }/{ props.colStart }/{ props.rowEnd }/{ props.colEnd };
-        --translate-x: { props.translateX };
-        --translate-y: { props.translateY };
-    "
+     class:_3xpl-screensaver_card_grabbed={grabbed}
+     class:_3xpl-screensaver_card_moving={moving}
+     class:_3xpl-screensaver_card_swapping={swapping}
+     style:grid-area={gridArea}
+     style:--width={props.width + 'px'}
+     style:--height={props.height + 'px'}
+     style:--left={left + 'px'}
+     style:--top={top + 'px'}
+     style:--tx={tx + 'px'}
+     style:--ty={ty + 'px'}
      on:mousedown={mousedownHandler}
-     on:mouseover={mouseoverHandler}
-     on:mouseenter={handleMouseEnter}
-     on:mouseleave={handleMouseLeave}>
+     on:mousemove={mousemoveHandler}
+     on:mouseleave={mouseleaveHandler}>
     {props.idx}
 </div>
 
@@ -178,45 +254,39 @@
 
             grid-area: 0/1/0/1;
 
-            grid-column: var(--col);
-            grid-row: var(--row);
-
-            transition: border-color 0.2s ease-in;
-
             user-select: none;
-
-            backdrop-filter: blur(0.75rem);
 
             transform: translate(0, 0);
 
+            backdrop-filter: blur(0.75rem);
+            transition: border-color 200ms ease-in;
+
             &:hover {
-                transition-duration: 0.1s;
+                transition-duration: 100ms;
                 transition-timing-function: ease-out;
                 border-color: var(--c-accent);
             }
 
             &_moving {
-                pointer-events: none;
-                z-index: 1;
-                &:hover { border-color: transparent; }
-            }
-
-            &_grabbed {
                 border-color: var(--c-accent);
                 transition-timing-function: ease-out;
                 pointer-events: none;
+                z-index: 4;
+            }
 
+            &_grabbed {
+                transform: translate(var(--tx, 0px), var(--ty, 0px));
+                transition: border-color 200ms ease-out, transform 50ms linear;
+            }
+
+            &_grabbed, &_swapping {
                 position: fixed;
                 width: var(--width);
                 height: var(--height);
                 left: var(--left);
                 top: var(--top);
 
-                transition: transform 0.1s ease-out;
-
-                z-index: 2;
-
-                transform: translate(var(--translate-x, 0), var(--translate-y, 0));
+                z-index: 3;
             }
         }
     }
