@@ -1,4 +1,8 @@
 <script>
+    import {
+        onMount
+    } from "svelte";
+
     export let props, mouse, mousePos, grabPos, mousedownHandler;
 
     $: cursor = mouse.cursor;
@@ -18,6 +22,10 @@
     let moving = false;
     let left = 0;
     let top = 0;
+    let width = 0;
+    let height = 0;
+
+    let animation = null;
 
     const createAnimationProps = (from = null, to, fill = 'none') => {
         from = {
@@ -52,15 +60,14 @@
             left = rect.left;
             top = rect.top;
         }
-        card?.animation?.cancel();
-        card.animation = null;
+        animation?.cancel();
+        animation = null;
     }
 
     const swap = () => {
-        if (wasGrabbed || card?.animation?.playState !== 'finished') {
+        if (wasGrabbed || animation?.playState !== 'finished') {
             cancelAnimation();
 
-            const cs = getComputedStyle(card);
             const to = {
                 x: props.x - left,
                 y: props.y - top
@@ -68,8 +75,8 @@
             const { keyframes, timing } = createAnimationProps(null, to);
 
             moving = true;
-            card.animation = card.animate(keyframes, timing);
-            card.animation.onfinish = () => {
+            animation = card.animate(keyframes, timing);
+            animation.onfinish = () => {
                 left = props.x;
                 top = props.y;
                 moving = false;
@@ -77,7 +84,8 @@
                 wasPreviewed = false;
             }
         }
-        else if (card?.animation?.playState === 'finished') {
+        else if (animation?.playState === 'finished') {
+            cancelAnimation(false);
             left = props.x;
             top = props.y;
             moving = false;
@@ -110,8 +118,8 @@
         const { keyframes, timing } = createAnimationProps(null, to, 'forwards');
 
         moving = true;
-        card.animation = card.animate(keyframes, timing);
-        card.animation.onfinish = () => {
+        animation = card.animate(keyframes, timing);
+        animation.onfinish = () => {
             moving = false;
             wasPreviewed = !wasPreviewed;
         }
@@ -131,17 +139,18 @@
 
         moving = true;
         tx = ty = 0;
-        card.animation = card.animate(keyframes, timing);
-        card.animation.onfinish = () => {
+        animation = card.animate(keyframes, timing);
+        animation.onfinish = () => {
             moving = false;
         }
     };
 
     const returnPreviewed = () => {
         if (moving) return;
-        if (card.animation) {
-            card.animation.reverse();
-            card.animation = null;
+        if (animation) {
+            moving = true;
+            animation.reverse();
+            animation = null;
         }
     };
 
@@ -164,7 +173,6 @@
     }
 
     $: {
-        let animation = card?.animation ?? null;
         if (animation == null || animation.playState === 'finished') {
             if (preview && !wasPreviewed) {
                 if (props.previewX != null && props.previewY != null) {
@@ -219,6 +227,13 @@
             };
         }
     }
+
+    export const resize = () => {
+        const rect = card.getBoundingClientRect();
+        ([ props.width, props.height, props.x, props.y ] = [ rect.width, rect.height, rect.left, rect.top ]);
+    }
+
+    onMount(() => resize());
 </script>
 
 <div bind:this={card}
@@ -243,6 +258,9 @@
     ._3xpl-screensaver_ {
         &card {
             box-sizing: border-box;
+
+            width: 100%;
+            height: 100%;
 
             border-radius: 0.625rem;
             padding: 1rem;

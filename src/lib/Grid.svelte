@@ -36,8 +36,14 @@
         };
     });
 
+    let childrenComponents = new Array(cards.length).fill(null);
+
     let grid = null;
     let children = null;
+
+    let shadowHost;
+    let shadow;
+    let shadowChildren;
 
     let grabbedIdx = null;
     let previewIdx = null;
@@ -162,18 +168,39 @@
     }
 
     onMount(() => {
-        children = Array.from(grid.children);
-        cards = cards.map((card, idx) => {
-           const rect = children[idx].getBoundingClientRect();
-           return {
-               ...card,
-               width: rect.width,
-               height: rect.height,
-               x: rect.left,
-               y: rect.top
-           };
-       });
+        children = Array.from(grid.children).filter(el => el.id !== '_3xpl-screensaver_grid-slot');
+
+        shadowChildren = Array.from(shadowHost.children);
+        shadow = shadowHost.attachShadow({ mode: 'open' });
+        shadow.append(...shadowChildren);
+        Array.from(shadowChildren).forEach((el, idx) => {
+            children[idx].innerHTML = null;
+            children[idx].appendChild(el);
+        });
     });
+
+    const resizeChildren = (entries) => {
+        for (const entry of entries) {
+            if (entry.target === grid) {
+                const rect = entry?.contentRect ?? null;
+                if (rect && rect.width >= 0 && rect.height >= 0) {
+                    childrenComponents.forEach(card => card.resize());
+                    return;
+                }
+            }
+        }
+    }
+
+    const resizeObserver = (node) => {
+        const obs = new ResizeObserver((entries) => resizeChildren(entries));
+        obs.observe(node);
+
+        return {
+            destroy() {
+                obs.unobserve(node);
+            }
+        }
+    }
 </script>
 
 <svelte:window on:mouseup={mouseupHandler} />
@@ -181,13 +208,26 @@
 <div class="_3xpl-screensaver_grid"
      bind:this={grid}
      on:mousemove={mousemoveHandler}
+     use:resizeObserver
      style:cursor={mouse.cursor ?? 'default'}>
+
+    <div id="_3xpl-screensaver_grid-slot"
+         style:display="none"
+         style:position="fixed"
+         style:height="0"
+         style:width="0"
+         bind:this={shadowHost}>
+        <slot />
+    </div>
+
     {#each cards as card, idx}
+
         <Card props={card}
               bind:mouse={mouse}
               mousePos={mousePos}
               grabPos={grabPos}
-              mousedownHandler={(evt) => mousedownHandler(evt, card.idx)} />
+              mousedownHandler={(evt) => mousedownHandler(evt, card.idx)}
+              bind:this={childrenComponents[idx]}/>
     {/each}
 </div>
 
@@ -201,6 +241,8 @@
             grid-template-columns: repeat(4, 1fr);
             grid-template-rows: repeat(4, 1fr);
             grid-gap: 1.25rem;
+
+            color: white;
         }
     }
 </style>
