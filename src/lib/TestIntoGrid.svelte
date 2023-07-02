@@ -1,8 +1,10 @@
 <script>
-    let count = 0;
+    let count = 1;
     $: doubled = count * 2;
     export let doubled;
     const increment = () => count++;
+
+    setInterval(() => count++, 2000);
 </script>
 
 <button on:click={increment}>

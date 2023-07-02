@@ -2,9 +2,9 @@
     import Card from "./Card.svelte";
     import { onMount } from "svelte";
 
-    let rowSize = 4;
-    let colSize = 4;
-    let gridSize = rowSize * colSize;
+    export let rows = 4, columns = 4;
+
+    let gridSize = rows * columns;
     let matrix = new Array(gridSize).fill(null);
     let mousePos = { x: null, y: null };
     let grabPos = { x: null, y: null };
@@ -12,8 +12,8 @@
 
     let cards = matrix.map((_, idx) => {
         let row = 0;
-        while ((row * rowSize) + rowSize <= idx) row++;
-        let col = idx % colSize;
+        while ((row * rows) + rows <= idx) row++;
+        let col = idx % columns;
 
         return {
             rowStart: row + 1,
@@ -213,6 +213,7 @@
                     node.remove();
                 }
             }
+            addedNodes = addedNodes.filter(el => el.nodeType === 1);
             cards.forEach((card, idx) => {
                 if (addedNodes.length > 0 && appendedSlotChildrenCount < gridSize) {
                     if (!card.content) {
@@ -244,7 +245,9 @@
      bind:this={grid}
      on:mousemove={mousemoveHandler}
      use:resizeObserver
-     style:cursor={mouse.cursor ?? 'default'}>
+     style:cursor={mouse.cursor ?? 'default'}
+     style:--rows={rows ?? 4}
+     style:--columns={columns ?? 4}>
 
     <div id="_3xpl-screensaver_grid-slot"
          style:display="none"
@@ -274,8 +277,8 @@
             width: 100%;
 
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(4, 1fr);
+            grid-template-columns: repeat(var(--columns, 4), 1fr);
+            grid-template-rows: repeat(var(--rows, 4), 1fr);
             grid-gap: 1.25rem;
 
             color: white;

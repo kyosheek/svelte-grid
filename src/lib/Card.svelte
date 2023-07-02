@@ -234,6 +234,25 @@
     }
 
     onMount(() => resize());
+
+    const checkRemovedNodes = (entries) => {
+        for (const entry of entries) {
+            if (entry?.removedNodes.length > 0 && card.innerHTML === '') {
+                props.content = false;
+            }
+        }
+    }
+
+    const contentObserver = (node) => {
+        const obs = new MutationObserver((entries) => checkRemovedNodes(entries));
+        obs.observe(node, { childList: true });
+
+        return {
+            destroy() {
+                obs.disconnect();
+            }
+        }
+    }
 </script>
 
 <div bind:this={card}
@@ -250,7 +269,8 @@
      style:--ty={ty + 'px'}
      on:mousedown={mousedownHandler}
      on:mousemove={mousemoveHandler}
-     on:mouseleave={mouseleaveHandler}>
+     on:mouseleave={mouseleaveHandler}
+     use:contentObserver>
     {props.idx}
 </div>
 
