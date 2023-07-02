@@ -32,7 +32,8 @@
             previewY: null,
             shown: true,
             swapping: false,
-            idx
+            idx,
+            content: null
         };
     });
 
@@ -41,9 +42,8 @@
     let grid = null;
     let children = null;
 
-    let shadowHost;
-    let shadow;
-    let shadowChildren;
+    let slotHost;
+    let appendedSlotChildrenCount = 0;
 
     let grabbedIdx = null;
     let previewIdx = null;
@@ -170,12 +170,12 @@
     onMount(() => {
         children = Array.from(grid.children).filter(el => el.id !== '_3xpl-screensaver_grid-slot');
 
-        shadowChildren = Array.from(shadowHost.children);
-        shadow = shadowHost.attachShadow({ mode: 'open' });
-        shadow.append(...shadowChildren);
-        Array.from(shadowChildren).forEach((el, idx) => {
+        const slotHostChildren = slotHost.children;
+        Array.from(slotHostChildren).forEach((el, idx) => {
+            cards[idx].content = true;
             children[idx].innerHTML = null;
             children[idx].appendChild(el);
+            appendedSlotChildrenCount++;
         });
     });
 
@@ -201,6 +201,41 @@
             }
         }
     }
+
+    const addChildren = (entries) => {
+        entries.forEach(entry => {
+            let { addedNodes } = entry;
+            addedNodes = Array.from(addedNodes);
+            if (appendedSlotChildrenCount >= gridSize) {
+                while (addedNodes.length > 0) {
+                    const node = addedNodes.pop();
+                    console.log(node);
+                    node.remove();
+                }
+            }
+            cards.forEach((card, idx) => {
+                if (addedNodes.length > 0 && appendedSlotChildrenCount < gridSize) {
+                    if (!card.content) {
+                        cards[idx].content = true;
+                        children[idx].innerHTML = null;
+                        children[idx].appendChild(addedNodes.pop());
+                        appendedSlotChildrenCount++;
+                    }
+                }
+            });
+        })
+    }
+
+    const childObserver = (node) => {
+        const obs = new MutationObserver((entries) => addChildren(entries));
+        obs.observe(node, { childList: true });
+
+        return {
+            destroy() {
+                obs.disconnect();
+            }
+        }
+    }
 </script>
 
 <svelte:window on:mouseup={mouseupHandler} />
@@ -216,7 +251,8 @@
          style:position="fixed"
          style:height="0"
          style:width="0"
-         bind:this={shadowHost}>
+         bind:this={slotHost}
+         use:childObserver>
         <slot />
     </div>
 
