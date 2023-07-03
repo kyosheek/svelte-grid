@@ -230,7 +230,13 @@
 
     export const resize = () => {
         const rect = card.getBoundingClientRect();
-        ([ props.width, props.height, props.x, props.y ] = [ rect.width, rect.height, rect.left, rect.top ]);
+        props = {
+            ...props,
+            width: rect.width,
+            height: rect.height,
+            x: rect.left,
+            y: rect.top
+        };
     }
 
     onMount(() => resize());

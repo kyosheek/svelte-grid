@@ -1,4 +1,5 @@
 <script>
+    export let testProp;
     let count = 1;
     $: doubled = count * 2;
     export let doubled;
@@ -11,4 +12,6 @@
     count: {count}
     <br/>
     doubled: {doubled}
+    <br/>
+    text prop: {testProp}
 </button>

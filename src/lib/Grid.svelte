@@ -12,7 +12,7 @@
 
     let cards = matrix.map((_, idx) => {
         let row = 0;
-        while ((row * rows) + rows <= idx) row++;
+        while ((row * columns) + columns <= idx) row++;
         let col = idx % columns;
 
         return {
@@ -30,20 +30,20 @@
             preview: false,
             previewX: null,
             previewY: null,
-            shown: true,
+            hidden: false,
             swapping: false,
             idx,
             content: null
         };
     });
 
-    let childrenComponents = new Array(cards.length).fill(null);
-
     let grid = null;
     let children = null;
 
     let slotHost;
     let appendedSlotChildrenCount = 0;
+    let childrenComponents = {};
+    cards.map(el => el.idx.toString()).forEach(idx => childrenComponents[idx] = null);
 
     let grabbedIdx = null;
     let previewIdx = null;
@@ -140,7 +140,7 @@
             evt.preventDefault();
 
             for (let i = 0; i < cards.length; i++) {
-                if (cards[i].shown && grabbedIdx !== i) {
+                if (!cards[i].hidden && grabbedIdx !== i) {
                     const leftX = cards[i].x;
                     const rightX = leftX + cards[i].width;
                     const topY = cards[i].y;
@@ -168,10 +168,10 @@
     }
 
     onMount(() => {
-        children = Array.from(grid.children).filter(el => el.id !== '_3xpl-screensaver_grid-slot');
+        children = Array.from(grid.children).filter(el => el.id !== '_3xpl-screensaver_grid-slot-host');
 
         const slotHostChildren = slotHost.children;
-        Array.from(slotHostChildren).forEach((el, idx) => {
+        Array.from(slotHostChildren).filter(node => node.id !== '_3xpl-screensaver_grid-slot-breaker').forEach((el, idx) => {
             cards[idx].content = true;
             children[idx].innerHTML = null;
             children[idx].appendChild(el);
@@ -184,7 +184,7 @@
             if (entry.target === grid) {
                 const rect = entry?.contentRect ?? null;
                 if (rect && rect.width >= 0 && rect.height >= 0) {
-                    childrenComponents.forEach(card => card.resize());
+                    for (const key in childrenComponents) childrenComponents[key]?.resize();
                     return;
                 }
             }
@@ -205,11 +205,10 @@
     const addChildren = (entries) => {
         entries.forEach(entry => {
             let { addedNodes } = entry;
-            addedNodes = Array.from(addedNodes);
+            addedNodes = Array.from(addedNodes).filter(node => node.id !== '_3xpl-screensaver_grid-slot-breaker');
             if (appendedSlotChildrenCount >= gridSize) {
                 while (addedNodes.length > 0) {
                     const node = addedNodes.pop();
-                    console.log(node);
                     node.remove();
                 }
             }
@@ -249,24 +248,19 @@
      style:--rows={rows ?? 4}
      style:--columns={columns ?? 4}>
 
-    <div id="_3xpl-screensaver_grid-slot"
-         style:display="none"
-         style:position="fixed"
-         style:height="0"
-         style:width="0"
+    <div id="_3xpl-screensaver_grid-slot-host"
          bind:this={slotHost}
          use:childObserver>
         <slot />
     </div>
 
     {#each cards as card, idx}
-
-        <Card props={card}
+        <Card bind:props={card}
               bind:mouse={mouse}
               mousePos={mousePos}
               grabPos={grabPos}
               mousedownHandler={(evt) => mousedownHandler(evt, card.idx)}
-              bind:this={childrenComponents[idx]}/>
+              bind:this={childrenComponents[idx]} />
     {/each}
 </div>
 
@@ -283,5 +277,12 @@
 
             color: white;
         }
+    }
+
+    #_3xpl-screensaver_grid-slot-host {
+        display: none;
+        position: fixed;
+        height: 0;
+        width: 0;
     }
 </style>
