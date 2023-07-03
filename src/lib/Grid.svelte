@@ -1,8 +1,6 @@
 <script>
     import GridItem from "./GridItem.svelte";
     import { onMount } from "svelte";
-
-    const slotHostId = `_kyoshee-svelte-grid_slot-host`;
     export let rows = 4, columns = 4;
 
     let gridSize = rows * columns;
@@ -11,7 +9,7 @@
     let grabPos = { x: null, y: null };
     let mouse = { cursor: 'default', grabbing: false, stretching: false };
 
-    let cards = matrix.map((_, idx) => {
+    let itemsProps = matrix.map((_, idx) => {
         let row = 0;
         while ((row * columns) + columns <= idx) row++;
         let col = idx % columns;
@@ -44,37 +42,37 @@
     let slotHost;
     let appendedSlotChildrenCount = 0;
     let childrenComponents = {};
-    cards.map(el => el.idx.toString()).forEach(idx => childrenComponents[idx] = null);
+    itemsProps.map(el => el.idx.toString()).forEach(idx => childrenComponents[idx] = null);
 
     let grabbedIdx = null;
     let previewIdx = null;
 
-    const swapCards = () => {
-        const newGrabbedCard = Object.assign({}, cards[grabbedIdx]);
-        const newPreviewCard = Object.assign({}, cards[previewIdx]);
+    const swapItemsProps = () => {
+        const newGrabbedItemProps = Object.assign({}, itemsProps[grabbedIdx]);
+        const newPreviewItemProps = Object.assign({}, itemsProps[previewIdx]);
 
-        newGrabbedCard.colStart = cards[previewIdx].colStart;
-        newGrabbedCard.colEnd = cards[previewIdx].colEnd;
-        newGrabbedCard.rowStart = cards[previewIdx].rowStart;
-        newGrabbedCard.rowEnd = cards[previewIdx].rowEnd;
-        newGrabbedCard.x = cards[previewIdx].x;
-        newGrabbedCard.y = cards[previewIdx].y;
-        newGrabbedCard.grabbed = false;
-        newGrabbedCard.swapping = true;
+        newGrabbedItemProps.colStart = itemsProps[previewIdx].colStart;
+        newGrabbedItemProps.colEnd = itemsProps[previewIdx].colEnd;
+        newGrabbedItemProps.rowStart = itemsProps[previewIdx].rowStart;
+        newGrabbedItemProps.rowEnd = itemsProps[previewIdx].rowEnd;
+        newGrabbedItemProps.x = itemsProps[previewIdx].x;
+        newGrabbedItemProps.y = itemsProps[previewIdx].y;
+        newGrabbedItemProps.grabbed = false;
+        newGrabbedItemProps.swapping = true;
 
-        newPreviewCard.colStart = cards[grabbedIdx].colStart;
-        newPreviewCard.colEnd = cards[grabbedIdx].colEnd;
-        newPreviewCard.rowStart = cards[grabbedIdx].rowStart;
-        newPreviewCard.rowEnd = cards[grabbedIdx].rowEnd;
-        newPreviewCard.x = cards[grabbedIdx].x;
-        newPreviewCard.y = cards[grabbedIdx].y;
-        newPreviewCard.preview = false;
-        newPreviewCard.previewX = null;
-        newPreviewCard.previewY = null;
-        newPreviewCard.grabbed = false;
-        newPreviewCard.swapping = true;
+        newPreviewItemProps.colStart = itemsProps[grabbedIdx].colStart;
+        newPreviewItemProps.colEnd = itemsProps[grabbedIdx].colEnd;
+        newPreviewItemProps.rowStart = itemsProps[grabbedIdx].rowStart;
+        newPreviewItemProps.rowEnd = itemsProps[grabbedIdx].rowEnd;
+        newPreviewItemProps.x = itemsProps[grabbedIdx].x;
+        newPreviewItemProps.y = itemsProps[grabbedIdx].y;
+        newPreviewItemProps.preview = false;
+        newPreviewItemProps.previewX = null;
+        newPreviewItemProps.previewY = null;
+        newPreviewItemProps.grabbed = false;
+        newPreviewItemProps.swapping = true;
 
-        [ cards[grabbedIdx], cards[previewIdx] ] = [ newGrabbedCard, newPreviewCard ];
+        [ itemsProps[grabbedIdx], itemsProps[previewIdx] ] = [ newGrabbedItemProps, newPreviewItemProps ];
     }
 
     const mousedownHandler = (evt, idx) => {
@@ -98,7 +96,7 @@
             };
 
             grabbedIdx = idx;
-            cards[idx].grabbed = true;
+            itemsProps[idx].grabbed = true;
         }
     }
 
@@ -117,11 +115,11 @@
 
             if (grabbedIdx != null) {
                 if (previewIdx != null) {
-                    swapCards();
+                    swapItemsProps();
                     previewIdx = null;
                 }
                 else {
-                    cards[grabbedIdx].grabbed = false;
+                    itemsProps[grabbedIdx].grabbed = false;
                 }
                 grabbedIdx = null;
             }
@@ -135,34 +133,34 @@
             y: pageY
         };
 
-        const previewObj = Object.assign({}, cards[grabbedIdx]);
+        const previewItemProps = Object.assign({}, itemsProps[grabbedIdx]);
 
         if (grabbedIdx != null && mouse.grabbing) {
             evt.preventDefault();
 
-            for (let i = 0; i < cards.length; i++) {
-                if (!cards[i].hidden && grabbedIdx !== i) {
-                    const leftX = cards[i].x;
-                    const rightX = leftX + cards[i].width;
-                    const topY = cards[i].y;
-                    const bottomY = topY + cards[i].height;
+            for (let i = 0; i < itemsProps.length; i++) {
+                if (!itemsProps[i].hidden && grabbedIdx !== i) {
+                    const leftX = itemsProps[i].x;
+                    const rightX = leftX + itemsProps[i].width;
+                    const topY = itemsProps[i].y;
+                    const bottomY = topY + itemsProps[i].height;
 
-                    const newCardObj = Object.assign({}, cards[i]);
+                    const newItemProps = Object.assign({}, itemsProps[i]);
 
                     if (pageX >= leftX && pageX <= rightX && pageY >= topY && pageY <= bottomY) {
-                        newCardObj.preview = true;
-                        newCardObj.previewX = previewObj.x;
-                        newCardObj.previewY = previewObj.y;
+                        newItemProps.preview = true;
+                        newItemProps.previewX = previewItemProps.x;
+                        newItemProps.previewY = previewItemProps.y;
                         previewIdx = i;
                     }
                     else {
-                        newCardObj.preview = false;
-                        newCardObj.previewX = null;
-                        newCardObj.previewY = null;
+                        newItemProps.preview = false;
+                        newItemProps.previewX = null;
+                        newItemProps.previewY = null;
                         if (previewIdx === i) previewIdx = null;
                     }
 
-                    cards[i] = newCardObj;
+                    itemsProps[i] = newItemProps;
                 }
             }
         }
@@ -173,7 +171,7 @@
 
         const slotHostChildren = slotHost.children;
         Array.from(slotHostChildren).forEach((el, idx) => {
-            cards[idx].content = true;
+            itemsProps[idx].content = true;
             children[idx].innerHTML = null;
             children[idx].appendChild(el);
             appendedSlotChildrenCount++;
@@ -214,10 +212,10 @@
                 }
             }
             addedNodes = addedNodes.filter(el => el.nodeType === 1);
-            cards.forEach((card, idx) => {
+            itemsProps.forEach((itemProps, idx) => {
                 if (addedNodes.length > 0 && appendedSlotChildrenCount < gridSize) {
-                    if (!card.content) {
-                        cards[idx].content = true;
+                    if (!itemProps.content) {
+                        itemsProps[idx].content = true;
                         children[idx].innerHTML = null;
                         children[idx].appendChild(addedNodes.pop());
                         appendedSlotChildrenCount++;
@@ -257,12 +255,12 @@
         <slot />
     </div>
 
-    {#each cards as card, idx}
-        <GridItem bind:props={card}
+    {#each itemsProps as itemProps, idx}
+        <GridItem bind:props={itemProps}
                   bind:mouse={mouse}
                   mousePos={mousePos}
                   grabPos={grabPos}
-                  mousedownHandler={(evt) => mousedownHandler(evt, card.idx)}
+                  mousedownHandler={(evt) => mousedownHandler(evt, itemProps.idx)}
                   bind:this={childrenComponents[idx]} />
     {/each}
 </div>
