@@ -98,6 +98,7 @@
         left = props.x;
         top = props.y;
         if (!wasGrabbed) wasGrabbed = true;
+
         const next = {
             tx: mousePos.x - grabPos.x,
             ty: mousePos.y - grabPos.y
@@ -234,9 +235,10 @@
             ...props,
             width: rect.width,
             height: rect.height,
-            x: rect.left,
-            y: rect.top
+            x: wasPreviewed ? props.x : rect.left,
+            y: wasPreviewed ? props.y : rect.top
         };
+        ([ left, top ] = [ props.x, props.y ]);
     }
 
     onMount(() => resize());
@@ -259,6 +261,28 @@
             }
         }
     }
+
+    const resizeObserver = (node) => {
+        const obs = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                if (entry.target === card) {
+                    const rect = entry?.contentRect ?? null;
+                    if (rect && rect.width >= 0 && rect.height >= 0) {
+                        resize();
+                        return;
+                    }
+                }
+            }
+        });
+
+        obs.observe(node);
+
+        return {
+            destroy() {
+                obs.unobserve(node);
+            }
+        }
+    }
 </script>
 
 <div bind:this={card}
@@ -276,7 +300,8 @@
      on:mousedown={mousedownHandler}
      on:mousemove={mousemoveHandler}
      on:mouseleave={mouseleaveHandler}
-     use:contentObserver>
+     use:contentObserver
+     use:resizeObserver>
     {props.idx}
 </div>
 
