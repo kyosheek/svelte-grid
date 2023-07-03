@@ -1,7 +1,8 @@
 <script>
-    import Card from "./Card.svelte";
+    import GridItem from "./GridItem.svelte";
     import { onMount } from "svelte";
 
+    const slotHostId = `_kyoshee-svelte-grid_slot-host`;
     export let rows = 4, columns = 4;
 
     let gridSize = rows * columns;
@@ -168,10 +169,10 @@
     }
 
     onMount(() => {
-        children = Array.from(grid.children).filter(el => el.id !== '_3xpl-screensaver_grid-slot-host');
+        children = Array.from(grid.children).filter(el => el !== slotHost);
 
         const slotHostChildren = slotHost.children;
-        Array.from(slotHostChildren).filter(node => node.id !== '_3xpl-screensaver_grid-slot-breaker').forEach((el, idx) => {
+        Array.from(slotHostChildren).forEach((el, idx) => {
             cards[idx].content = true;
             children[idx].innerHTML = null;
             children[idx].appendChild(el);
@@ -205,7 +206,7 @@
     const addChildren = (entries) => {
         entries.forEach(entry => {
             let { addedNodes } = entry;
-            addedNodes = Array.from(addedNodes).filter(node => node.id !== '_3xpl-screensaver_grid-slot-breaker');
+            addedNodes = Array.from(addedNodes);
             if (appendedSlotChildrenCount >= gridSize) {
                 while (addedNodes.length > 0) {
                     const node = addedNodes.pop();
@@ -240,7 +241,7 @@
 
 <svelte:window on:mouseup={mouseupHandler} />
 
-<div class="_3xpl-screensaver_grid"
+<div class="_kyoshee-svelte-grid_"
      bind:this={grid}
      on:mousemove={mousemoveHandler}
      use:resizeObserver
@@ -248,41 +249,34 @@
      style:--rows={rows ?? 4}
      style:--columns={columns ?? 4}>
 
-    <div id="_3xpl-screensaver_grid-slot-host"
-         bind:this={slotHost}
-         use:childObserver>
+    <div bind:this={slotHost}
+         use:childObserver
+         style:width={0}
+         style:height={0}
+         style:display={'none'}>
         <slot />
     </div>
 
     {#each cards as card, idx}
-        <Card bind:props={card}
-              bind:mouse={mouse}
-              mousePos={mousePos}
-              grabPos={grabPos}
-              mousedownHandler={(evt) => mousedownHandler(evt, card.idx)}
-              bind:this={childrenComponents[idx]} />
+        <GridItem bind:props={card}
+                  bind:mouse={mouse}
+                  mousePos={mousePos}
+                  grabPos={grabPos}
+                  mousedownHandler={(evt) => mousedownHandler(evt, card.idx)}
+                  bind:this={childrenComponents[idx]} />
     {/each}
 </div>
 
 <style lang="scss">
-    ._3xpl-screensaver_ {
-        &grid {
-            height: 100%;
-            width: 100%;
+    ._kyoshee-svelte-grid_ {
+        height: 100%;
+        width: 100%;
 
-            display: grid;
-            grid-template-columns: repeat(var(--columns, 4), 1fr);
-            grid-template-rows: repeat(var(--rows, 4), 1fr);
-            grid-gap: 1.25rem;
+        display: grid;
+        grid-template-columns: repeat(var(--columns, 4), 1fr);
+        grid-template-rows: repeat(var(--rows, 4), 1fr);
+        grid-gap: 1.25rem;
 
-            color: white;
-        }
-    }
-
-    #_3xpl-screensaver_grid-slot-host {
-        display: none;
-        position: fixed;
-        height: 0;
-        width: 0;
+        color: white;
     }
 </style>

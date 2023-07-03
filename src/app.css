@@ -1,4 +1,4 @@
-:root._3xpl-screensaver-util_ {
+:root._kyoshee-svelte-grid-util_ {
     margin: 0;
     padding: 0;
     width: 100%;
@@ -9,7 +9,7 @@
     max-height: 100vh;
 }
 
-body._3xpl-screensaver-util_ {
+body._kyoshee-svelte-grid-util_ {
     margin: 0;
     padding: 0;
     width: 100%;
@@ -17,13 +17,13 @@ body._3xpl-screensaver-util_ {
     background: #0E0E0E;
 }
 
-#_3xpl-screensaver_ {
+#_kyoshee-svelte-grid_mount-point {
     --c-bg: #0E0E0E;
     --c-bg_card_empty: rgba(255, 255, 255, 0.05);
     --c-accent: #BBED0D;
 }
 
-#_3xpl-screensaver_ {
+#_kyoshee-svelte-grid_mount-point {
     box-sizing: border-box;
     margin: 0;
 

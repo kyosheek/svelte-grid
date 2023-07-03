@@ -262,10 +262,10 @@
 </script>
 
 <div bind:this={card}
-     class="_3xpl-screensaver_card _3xpl-screensaver_card_empty"
-     class:_3xpl-screensaver_card_grabbed={grabbed}
-     class:_3xpl-screensaver_card_moving={moving}
-     class:_3xpl-screensaver_card_swapping={swapping}
+     class="_kyoshee-svelte-grid_item _kyoshee-svelte-grid_item_empty"
+     class:_kyoshee-svelte-grid_item_grabbed={grabbed}
+     class:_kyoshee-svelte-grid_item_moving={moving}
+     class:_kyoshee-svelte-grid_item_swapping={swapping}
      style:grid-area={gridArea}
      style:--width={props.width + 'px'}
      style:--height={props.height + 'px'}
@@ -281,8 +281,8 @@
 </div>
 
 <style lang="scss">
-    ._3xpl-screensaver_ {
-        &card {
+    ._kyoshee-svelte-grid_ {
+        &item {
             box-sizing: border-box;
 
             width: 100%;
@@ -303,7 +303,8 @@
             transform: translate(0, 0);
 
             backdrop-filter: blur(0.75rem);
-            transition: border-color 200ms ease-in;
+            --default-transitions: border-color 200ms ease-in;
+            transition: var(--default-transitions);
 
             &:hover {
                 transition-duration: 100ms;
@@ -320,7 +321,7 @@
 
             &_grabbed {
                 transform: translate(var(--tx, 0px), var(--ty, 0px));
-                transition: border-color 200ms ease-out, transform 50ms linear;
+                transition: var(--default-transitions), transform 50ms linear;
             }
 
             &_grabbed, &_swapping {
