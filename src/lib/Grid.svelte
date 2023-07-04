@@ -1,7 +1,12 @@
 <script>
     import GridItem from "./GridItem.svelte";
     import { onMount } from "svelte";
-    export let rows = 4, columns = 4, hideEmpty = false;
+    export let rows = 4,
+        columns = 4,
+        rowGap = null,
+        columnGap = null,
+        gap = '1.25rem',
+        hideEmpty = false;
 
     let gridSize = rows * columns;
     let mousePos = {
@@ -468,6 +473,9 @@
      style:cursor={mouse.cursor}
      style:--rows={rows ?? 4}
      style:--columns={columns ?? 4}
+     style:--row-gap={rowGap ?? null}
+     style:--column-gap={columnGap ?? null}
+     style:--gap={gap ?? '1.25rem'}
      role="grid"
      tabindex="0">
 
@@ -500,7 +508,8 @@
         display: grid;
         grid-template-columns: repeat(var(--columns, 4), 1fr);
         grid-template-rows: repeat(var(--rows, 4), 1fr);
-        grid-gap: 1.25rem;
+        grid-column-gap: var(--column-gap, var(--gap, 1.25rem));
+        grid-row-gap: var(--row-gap, var(--gap, 1.25rem));
 
         color: white;
 
