@@ -5,9 +5,21 @@
 
     let gridSize = rows * columns;
     let matrix = new Array(gridSize).fill(null);
-    let mousePos = { x: null, y: null };
-    let grabPos = { x: null, y: null };
-    let mouse = { cursor: 'default', grabbing: false, stretching: false };
+    let mousePos = {
+        x: null,
+        y: null
+    };
+    let grabPos = {
+        x: null,
+        y: null
+    };
+    let scrollX = 0;
+    let scrollY = 0;
+    let mouse = {
+        cursor: 'default',
+        grabbing: false,
+        stretching: false
+    };
 
     let itemsProps = matrix.map((_, idx) => {
         let row = 0;
@@ -78,15 +90,16 @@
     const mousedownHandler = (evt, idx) => {
         if ((evt.which || evt.button) === 1) {
             evt.preventDefault();
+            resizeChildren();
 
             const {
-                pageX,
-                pageY
+                clientX,
+                clientY
             } = evt;
 
             grabPos = {
-                x: pageX,
-                y: pageY
+                x: clientX,
+                y: clientY
             };
 
             mouse = {
@@ -128,12 +141,13 @@
 
     const mousemoveHandler = (evt) => {
         const {
-            pageX,
-            pageY
+            clientX,
+            clientY
         } = evt;
+
         mousePos = {
-            x: pageX,
-            y: pageY
+            x: clientX,
+            y: clientY
         };
 
         const previewItemProps = Object.assign({}, itemsProps[grabbedIdx]);
@@ -150,7 +164,7 @@
 
                     const newItemProps = Object.assign({}, itemsProps[i]);
 
-                    if (pageX >= leftX && pageX <= rightX && pageY >= topY && pageY <= bottomY) {
+                    if (clientX >= leftX && clientX <= rightX && clientY >= topY && clientY <= bottomY) {
                         newItemProps.preview = true;
                         newItemProps.previewX = previewItemProps.x;
                         newItemProps.previewY = previewItemProps.y;
@@ -181,12 +195,16 @@
         });
     });
 
-    const resizeChildren = (entries) => {
+    const resizeChildren = () => {
+        for (const key in childrenComponents) childrenComponents[key]?.resize();
+    }
+
+    const resizeObserverHandler = (entries) => {
         for (const entry of entries) {
             if (entry.target === grid) {
                 const rect = entry?.contentRect ?? null;
                 if (rect && rect.width >= 0 && rect.height >= 0) {
-                    for (const key in childrenComponents) childrenComponents[key]?.resize();
+                    resizeChildren();
                     return;
                 }
             }
@@ -194,7 +212,7 @@
     }
 
     const resizeObserver = (node) => {
-        const obs = new ResizeObserver((entries) => resizeChildren(entries));
+        const obs = new ResizeObserver((entries) => resizeObserverHandler(entries));
         obs.observe(node);
 
         return {
@@ -240,7 +258,7 @@
     }
 </script>
 
-<svelte:window on:mouseup={mouseupHandler} />
+<svelte:window on:mouseup={mouseupHandler} bind:scrollX bind:scrollY />
 
 <div class="_kyoshee-svelte-grid_"
      bind:this={grid}
