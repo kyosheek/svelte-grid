@@ -1,6 +1,6 @@
 <script>
     import Grid from "./lib/Grid.svelte";
-    import TestIntoGrid from "./lib/TestIntoGrid.svelte";
+    import TestIntoGrid from "./TestIntoGrid.svelte";
 
     let count = 100;
     let exampleContent = new Array(3).fill(null).map(() => count++);
