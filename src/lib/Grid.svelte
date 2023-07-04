@@ -503,5 +503,8 @@
         grid-gap: 1.25rem;
 
         color: white;
+
+        --c-bg_card_empty: rgba(255, 255, 255, 0.05);
+        --c-accent: #BBED0D;
     }
 </style>

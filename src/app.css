@@ -18,12 +18,6 @@ body._kyoshee-svelte-grid-util_ {
 }
 
 #_kyoshee-svelte-grid_mount-point {
-    --c-bg: #0E0E0E;
-    --c-bg_card_empty: rgba(255, 255, 255, 0.05);
-    --c-accent: #BBED0D;
-}
-
-#_kyoshee-svelte-grid_mount-point {
     box-sizing: border-box;
     margin: 0;
 
@@ -35,5 +29,5 @@ body._kyoshee-svelte-grid-util_ {
 
     padding: 2.5rem;
 
-    background: var(--c-bg);
+    background: #0E0E0E;
 }
