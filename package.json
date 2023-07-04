@@ -1,6 +1,26 @@
 {
   "name": "@kyoshee/svelte-grid",
+  "author": "kyoshee",
+  "description": "Interactive grid implementation in Svelte",
+  "keywords": [ "js", "svelte", "grid", "drag", "drop", "resize", "interactive" ],
+
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kyosheek/svelte-grid.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kyosheek/svelte-grid/issues"
+  },
+  "homepage": "https://github.com/kyosheek/svelte-grid",
+
+  "version": "0.0.1",
   "license": "MIT",
+  "private": false,
+
+
+  "type": "module",
+
+
   "files": [
     "dist"
   ],
@@ -9,14 +29,15 @@
       "svelte": "./dist/index.js"
     }
   },
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
+
+
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
+
+
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^2.4.1",
     "vite": "^4.1.0"
