@@ -467,13 +467,16 @@
      use:resizeObserver
      style:cursor={mouse.cursor}
      style:--rows={rows ?? 4}
-     style:--columns={columns ?? 4}>
+     style:--columns={columns ?? 4}
+     role="grid"
+     tabindex="0">
 
     <div bind:this={slotHost}
          use:childrenObserver
          style:width={0}
          style:height={0}
-         style:display={'none'}>
+         style:display={'none'}
+         role="log">
         <slot />
     </div>
 

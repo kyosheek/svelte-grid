@@ -304,6 +304,9 @@
     const handleMousedown = (evt) => {
         mousedownHandler(evt, props.idx, isStretched);
     }
+
+    $: hidden = props.hidden || (hideEmpty && !props.content);
+    export let hidden;
 </script>
 
 <div bind:this={card}
@@ -311,7 +314,7 @@
      class:_kyoshee-svelte-grid_item_grabbed={grabbed}
      class:_kyoshee-svelte-grid_item_moving={moving}
      class:_kyoshee-svelte-grid_item_swapping={swapping}
-     class:_kyoshee-svelte-grid_item_hidden={props.hidden || (hideEmpty && !props.content)}
+     class:_kyoshee-svelte-grid_item_hidden={hidden}
      style:grid-area={gridArea}
      style:z-index={zIndex}
      style:--width={props.width + 'px'}
@@ -324,7 +327,9 @@
      on:mousemove={mousemoveHandler}
      on:mouseleave={mouseleaveHandler}
      use:contentObserver
-     use:resizeObserver>
+     use:resizeObserver
+     role="gridcell"
+     tabindex={hidden ? '-1' : `${props.colStart + props.rowStart}`}>
     {props.idx}
 </div>
 
