@@ -1,6 +1,5 @@
 <script>
     import Grid from "./lib/Grid.svelte";
-    import Settings from "./lib/Settings.svelte";
     import TestIntoGrid from "./lib/TestIntoGrid.svelte";
 
     let count = 100;
@@ -26,8 +25,6 @@
         <TestIntoGrid testProp={testProp} />
     {/if}
 </Grid>
-
-<Settings />
 
 <div id="control-buttons">
     <button on:click={addContent}>add content to grid?</button>

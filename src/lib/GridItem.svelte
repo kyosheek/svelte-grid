@@ -1,7 +1,5 @@
 <script>
-    import {
-        onMount
-    } from "svelte";
+    import { onMount } from "svelte";
 
     export let props, mouse, mousePos, grabPos, mousedownHandler;
 
