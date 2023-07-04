@@ -15,7 +15,7 @@
     let scrollX = 0;
     let scrollY = 0;
     let mouse = {
-        cursor: 'default',
+        cursor: null,
         grabbing: false,
         stretching: false,
         dragOffset: 20
@@ -31,6 +31,10 @@
             rowEnd: row + 2,
             colStart: col + 1,
             colEnd: col + 2,
+            originalRowStart: row + 1,
+            originalRowEnd: row + 2,
+            originalColStart: col + 1,
+            originalColEnd: col + 2,
             width: 0,
             height: 0,
             x: 0,
@@ -157,82 +161,107 @@
         });
     }
 
+    const canBeStretchedOrShrinked = (newProps) => {
+        let originalEqualCount = 4;
+        [ 'colStart', 'colEnd', 'rowStart', 'rowEnd' ].forEach(propName => {
+            const originalPropName = 'original' + propName.slice(0, 1).toUpperCase() + propName.slice(1);
+            if (newProps[propName] !== newProps[originalPropName]) originalEqualCount -= 1;
+        });
+        return originalEqualCount > 0;
+    }
+
     const stretchItemToLeft = (idx) => {
         if (itemsProps[idx].colStart === 1) return;
-        itemsProps[idx] = {
+        const newProps = {
             ...itemsProps[idx],
             colStart: itemsProps[idx].colStart - 1
         };
+        if (!canBeStretchedOrShrinked(newProps)) return;
+        itemsProps[idx] = newProps;
         hideOverlapped(idx);
     }
 
     const shrinkItemFromLeft = (idx) => {
         if (!(itemsProps[idx].colStart === columns || itemsProps[idx].colStart + 1 === itemsProps[idx].colEnd)) {
-            const oldProps = Object.assign({}, itemsProps[idx]);
-            itemsProps[idx] = {
+            const newProps = {
                 ...itemsProps[idx],
                 colStart: itemsProps[idx].colStart + 1
             };
+            if (!canBeStretchedOrShrinked(newProps)) return;
+            const oldProps = Object.assign({}, itemsProps[idx]);
+            itemsProps[idx] = newProps;
             hideOverlappedAndShowPreviouslyOverlapped(idx, oldProps);
         }
     }
 
     const stretchItemToRight = (idx) => {
         if (itemsProps[idx].colEnd === columns + 1) return;
-        itemsProps[idx] = {
+        const newProps = {
             ...itemsProps[idx],
             colEnd: itemsProps[idx].colEnd + 1
         };
+        if (!canBeStretchedOrShrinked(newProps)) return;
+        itemsProps[idx] = newProps;
         hideOverlapped(idx);
     }
 
     const shrinkItemFromRight = (idx) => {
         if (!(itemsProps[idx].colEnd === 2 || itemsProps[idx].colEnd - 1 === itemsProps[idx].colStart)) {
-            const oldProps = Object.assign({}, itemsProps[idx]);
-            itemsProps[idx] = {
+            const newProps = {
                 ...itemsProps[idx],
                 colEnd: itemsProps[idx].colEnd - 1
             };
+            if (!canBeStretchedOrShrinked(newProps)) return;
+            const oldProps = Object.assign({}, itemsProps[idx]);
+            itemsProps[idx] = newProps;
             hideOverlappedAndShowPreviouslyOverlapped(idx, oldProps);
         }
     }
 
     const stretchItemToTop = (idx) => {
         if (itemsProps[idx].rowStart === 1) return;
-        itemsProps[idx] = {
+        const newProps = {
             ...itemsProps[idx],
             rowStart: itemsProps[idx].rowStart - 1
         };
+        if (!canBeStretchedOrShrinked(newProps)) return;
+        itemsProps[idx] = newProps;
         hideOverlapped(idx);
     }
 
     const shrinkItemFromTop = (idx) => {
         if (!(itemsProps[idx].rowStart === rows || itemsProps[idx].rowStart - 1 === itemsProps[idx].rowEnd)) {
-            const oldProps = Object.assign({}, itemsProps[idx]);
-            itemsProps[idx] = {
+            const newProps = {
                 ...itemsProps[idx],
-                rowStart: itemsProps[idx].rowStart - 1
+                rowStart: itemsProps[idx].rowStart + 1
             };
+            if (!canBeStretchedOrShrinked(newProps)) return;
+            const oldProps = Object.assign({}, itemsProps[idx]);
+            itemsProps[idx] = newProps;
             hideOverlappedAndShowPreviouslyOverlapped(idx, oldProps);
         }
     }
 
     const stretchItemToBottom = (idx) => {
         if (itemsProps[idx].rowEnd === rows + 1) return;
-        itemsProps[idx] = {
+        const newProps = {
             ...itemsProps[idx],
             rowEnd: itemsProps[idx].rowEnd + 1
         };
+        if (!canBeStretchedOrShrinked(newProps)) return;
+        itemsProps[idx] = newProps;
         hideOverlapped(idx);
     }
 
     const shrinkItemFromBottom = (idx) => {
         if (!(itemsProps[idx].rowEnd === 2 || itemsProps[idx].rowEnd - 1 === itemsProps[idx].rowStart)) {
-            const oldProps = Object.assign({}, itemsProps[idx]);
-            itemsProps[idx] = {
+            const newProps = {
                 ...itemsProps[idx],
                 rowEnd: itemsProps[idx].rowEnd - 1
             };
+            if (!canBeStretchedOrShrinked(newProps)) return;
+            const oldProps = Object.assign({}, itemsProps[idx]);
+            itemsProps[idx] = newProps;
             hideOverlappedAndShowPreviouslyOverlapped(idx, oldProps);
         }
     }
@@ -267,11 +296,11 @@
         }
     }
 
-    const mousedownHandler = (evt, idx) => {
+    const mousedownHandler = (evt, idx, restrictDrag = false) => {
         if ((evt.which || evt.button) === 1) {
             evt.preventDefault();
 
-            if (mouse.cursor === 'grab') startGrabbing(evt, idx);
+            if (mouse.cursor === 'grab' && !restrictDrag) startGrabbing(evt, idx);
             else if (mouse.cursor === 'col-resize') resizeItemColumn(evt, idx);
             else if (mouse.cursor === 'row-resize') resizeItemRow(evt, idx);
         }
@@ -428,7 +457,7 @@
      bind:this={grid}
      on:mousemove={mousemoveHandler}
      use:resizeObserver
-     style:cursor={mouse.cursor ?? 'default'}
+     style:cursor={mouse.cursor}
      style:--rows={rows ?? 4}
      style:--columns={columns ?? 4}>
 
@@ -446,7 +475,7 @@
                   {gridSize}
                   mousePos={mousePos}
                   grabPos={grabPos}
-                  mousedownHandler={(evt) => mousedownHandler(evt, itemProps.idx)}
+                  mousedownHandler={mousedownHandler}
                   bind:this={childrenComponents[idx]} />
     {/each}
 </div>

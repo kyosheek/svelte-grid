@@ -5,10 +5,11 @@
 
     $: cursor = mouse.cursor;
     $: mouseGrabbing = mouse.grabbing;
-    $: preview = props.preview;
     $: grabbed = props.grabbed;
+    $: preview = props.preview;
     $: swapping = props.swapping;
     $: gridArea = `${props.rowStart}/${props.colStart}/${props.rowEnd}/${props.colEnd}`;
+    $: isStretched = (props.colEnd - props.colStart > 1) || (props.rowEnd - props.rowStart > 1);
     let zIndex = props.idx + 1;
     $: {
         if (grabbed) zIndex = gridSize + 2;
@@ -17,7 +18,7 @@
         else zIndex = props.idx + 1;
     }
 
-    export let grabbed, preview, mouseGrabbing, swapping, gridArea;
+    export let mouseGrabbing, grabbed, preview, swapping, gridArea;
 
     let card;
     let wasGrabbed = false;
@@ -229,7 +230,7 @@
             else {
                 mouse = {
                     ...mouse,
-                    cursor: 'grab'
+                    cursor: isStretched ? null : 'grab'
                 };
             }
         }
@@ -240,7 +241,7 @@
         if (!mouseGrabbing) {
             mouse = {
                 ...mouse,
-                cursor: 'default'
+                cursor: null
             };
         }
     }
@@ -299,6 +300,10 @@
             }
         }
     }
+
+    const handleMousedown = (evt) => {
+        mousedownHandler(evt, props.idx, isStretched);
+    }
 </script>
 
 <div bind:this={card}
@@ -315,7 +320,7 @@
      style:--top={top + 'px'}
      style:--tx={tx + 'px'}
      style:--ty={ty + 'px'}
-     on:mousedown={mousedownHandler}
+     on:mousedown={handleMousedown}
      on:mousemove={mousemoveHandler}
      on:mouseleave={mouseleaveHandler}
      use:contentObserver
