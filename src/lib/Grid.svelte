@@ -127,7 +127,10 @@
     }
 
     const mousemoveHandler = (evt) => {
-        const { pageX, pageY } = evt;
+        const {
+            pageX,
+            pageY
+        } = evt;
         mousePos = {
             x: pageX,
             y: pageY

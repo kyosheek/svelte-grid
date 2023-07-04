@@ -26,6 +26,7 @@
     let height = 0;
 
     let animation = null;
+    let clone = null;
 
     const createAnimationProps = (from = null, to, fill = 'none') => {
         from = {
@@ -95,9 +96,18 @@
     }
 
     const moveGrabbed = () => {
-        left = props.x;
-        top = props.y;
-        if (!wasGrabbed) wasGrabbed = true;
+        if (!wasGrabbed) {
+            clone = card.cloneNode();
+            clone.style.visibility = 'hidden';
+            clone.style.width = props.width + 'px';
+            clone.style.height = props.height + 'px';
+            card.parentElement.append(clone);
+
+            wasGrabbed = true;
+            const rect = card.getBoundingClientRect();
+            left = rect.left;
+            top = rect.top;
+        }
 
         const next = {
             tx: mousePos.x - grabPos.x,
@@ -130,6 +140,7 @@
         if (moving) return;
 
         wasGrabbed = false;
+        clone.remove();
 
         const matrix = new DOMMatrix(getComputedStyle(card).transform);
         const from = {
@@ -143,6 +154,8 @@
         animation = card.animate(keyframes, timing);
         animation.onfinish = () => {
             moving = false;
+            left = props.x;
+            top = props.y;
         }
     };
 
