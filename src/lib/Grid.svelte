@@ -18,7 +18,7 @@
         cursor: 'default',
         grabbing: false,
         stretching: false,
-        dragOffset: 40
+        dragOffset: 20
     };
 
     let itemsProps = new Array(gridSize).fill(null).map((_, idx) => {
