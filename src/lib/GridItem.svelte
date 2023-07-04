@@ -1,7 +1,7 @@
 <script>
     import { onMount } from "svelte";
 
-    export let props, gridSize, mouse, mousePos, grabPos, mousedownHandler;
+    export let props, gridSize, mouse, mousePos, grabPos, mousedownHandler, hideEmpty;
 
     $: cursor = mouse.cursor;
     $: mouseGrabbing = mouse.grabbing;
@@ -311,7 +311,7 @@
      class:_kyoshee-svelte-grid_item_grabbed={grabbed}
      class:_kyoshee-svelte-grid_item_moving={moving}
      class:_kyoshee-svelte-grid_item_swapping={swapping}
-     class:_kyoshee-svelte-grid_item_hidden={props.hidden}
+     class:_kyoshee-svelte-grid_item_hidden={props.hidden || (hideEmpty && !props.content)}
      style:grid-area={gridArea}
      style:z-index={zIndex}
      style:--width={props.width + 'px'}

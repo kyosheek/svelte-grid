@@ -1,7 +1,7 @@
 <script>
     import GridItem from "./GridItem.svelte";
     import { onMount } from "svelte";
-    export let rows = 4, columns = 4;
+    export let rows = 4, columns = 4, hideEmpty = false;
 
     let gridSize = rows * columns;
     let mousePos = {
@@ -71,6 +71,10 @@
         newGrabbedItemProps.colEnd = itemsProps[previewIdx].colEnd;
         newGrabbedItemProps.rowStart = itemsProps[previewIdx].rowStart;
         newGrabbedItemProps.rowEnd = itemsProps[previewIdx].rowEnd;
+        newGrabbedItemProps.originalColStart = itemsProps[previewIdx].originalColStart;
+        newGrabbedItemProps.originalColEnd = itemsProps[previewIdx].originalColEnd;
+        newGrabbedItemProps.originalRowStart = itemsProps[previewIdx].originalRowStart;
+        newGrabbedItemProps.originalRowEnd = itemsProps[previewIdx].originalRowEnd;
         newGrabbedItemProps.x = itemsProps[previewIdx].x;
         newGrabbedItemProps.y = itemsProps[previewIdx].y;
         newGrabbedItemProps.grabbed = false;
@@ -80,6 +84,10 @@
         newPreviewItemProps.colEnd = itemsProps[grabbedIdx].colEnd;
         newPreviewItemProps.rowStart = itemsProps[grabbedIdx].rowStart;
         newPreviewItemProps.rowEnd = itemsProps[grabbedIdx].rowEnd;
+        newPreviewItemProps.originalColStart = itemsProps[grabbedIdx].originalColStart;
+        newPreviewItemProps.originalColEnd = itemsProps[grabbedIdx].originalColEnd;
+        newPreviewItemProps.originalRowStart = itemsProps[grabbedIdx].originalRowStart;
+        newPreviewItemProps.originalRowEnd = itemsProps[grabbedIdx].originalRowEnd;
         newPreviewItemProps.x = itemsProps[grabbedIdx].x;
         newPreviewItemProps.y = itemsProps[grabbedIdx].y;
         newPreviewItemProps.preview = false;
@@ -473,6 +481,7 @@
         <GridItem bind:props={itemProps}
                   bind:mouse={mouse}
                   {gridSize}
+                  {hideEmpty}
                   mousePos={mousePos}
                   grabPos={grabPos}
                   mousedownHandler={mousedownHandler}

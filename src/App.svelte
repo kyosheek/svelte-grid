@@ -13,11 +13,12 @@
 
     let rows = 6;
     let columns = 4;
+    let hideEmpty = true;
 
     let testProp = 'heya';
 </script>
 
-<Grid {rows} {columns}>
+<Grid {rows} {columns} {hideEmpty}>
     {#each exampleContent as num}
         <button on:click={function () { this.remove(); }}>{num}</button>
     {/each}
