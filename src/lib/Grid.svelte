@@ -214,7 +214,7 @@
                     node.remove();
                 }
             }
-            addedNodes = addedNodes.filter(el => el.nodeType === 1);
+            addedNodes = addedNodes.filter(el => (el.nodeType === 1 || el.nodeType === 3));
             itemsProps.forEach((itemProps, idx) => {
                 if (addedNodes.length > 0 && appendedSlotChildrenCount < gridSize) {
                     if (!itemProps.content) {
@@ -228,7 +228,7 @@
         })
     }
 
-    const childObserver = (node) => {
+    const childrenObserver = (node) => {
         const obs = new MutationObserver((entries) => addChildren(entries));
         obs.observe(node, { childList: true });
 
@@ -251,7 +251,7 @@
      style:--columns={columns ?? 4}>
 
     <div bind:this={slotHost}
-         use:childObserver
+         use:childrenObserver
          style:width={0}
          style:height={0}
          style:display={'none'}>
