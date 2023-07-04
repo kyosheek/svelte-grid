@@ -1,5 +1,14 @@
 {
-  "name": "screensaver",
+  "name": "@kyoshee/svelte-grid",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "svelte": "./dist/index.js"
+    }
+  },
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,7 +19,10 @@
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^2.4.1",
-    "svelte": "^4.0.0",
     "vite": "^4.1.0"
+  },
+  "dependencies": {
+    "@sveltejs/package": "^2.1.0",
+    "svelte": "^4.0.3"
   }
 }
