@@ -1,7 +1,7 @@
 <script>
     import { onMount } from "svelte";
 
-    export let props, mouse, mousePos, grabPos, mousedownHandler;
+    export let props, gridSize, mouse, mousePos, grabPos, mousedownHandler;
 
     $: cursor = mouse.cursor;
     $: mouseGrabbing = mouse.grabbing;
@@ -9,6 +9,13 @@
     $: grabbed = props.grabbed;
     $: swapping = props.swapping;
     $: gridArea = `${props.rowStart}/${props.colStart}/${props.rowEnd}/${props.colEnd}`;
+    let zIndex = props.idx + 1;
+    $: {
+        if (grabbed) zIndex = gridSize + 2;
+        else if (moving) zIndex = gridSize + 1;
+        else if (props.hidden) zIndex = -1;
+        else zIndex = props.idx + 1;
+    }
 
     export let grabbed, preview, mouseGrabbing, swapping, gridArea;
 
@@ -199,8 +206,6 @@
 
     $: swapping && swap();
 
-    const dragOffset = 20;
-
     const mousemoveHandler = (evt) => {
         evt.preventDefault();
         if (!mouseGrabbing) {
@@ -209,13 +214,13 @@
             const x = evt.clientX - rect.left;
             const y = evt.clientY - rect.top;
 
-            if (x <= dragOffset || (rect.width - x) <= dragOffset) {
+            if (x <= mouse.dragOffset || (rect.width - x) <= mouse.dragOffset) {
                 mouse = {
                     ...mouse,
                     cursor: 'col-resize'
                 };
             }
-            else if (y <= dragOffset || (rect.height - y) <= dragOffset) {
+            else if (y <= mouse.dragOffset || (rect.height - y) <= mouse.dragOffset) {
                 mouse = {
                     ...mouse,
                     cursor: 'row-resize'
@@ -301,7 +306,9 @@
      class:_kyoshee-svelte-grid_item_grabbed={grabbed}
      class:_kyoshee-svelte-grid_item_moving={moving}
      class:_kyoshee-svelte-grid_item_swapping={swapping}
+     class:_kyoshee-svelte-grid_item_hidden={props.hidden}
      style:grid-area={gridArea}
+     style:z-index={zIndex}
      style:--width={props.width + 'px'}
      style:--height={props.height + 'px'}
      style:--left={left + 'px'}
@@ -332,7 +339,7 @@
 
             cursor: inherit;
 
-            grid-area: 0/1/0/1;
+            grid-area: 1/1/2/2;
 
             user-select: none;
 
@@ -368,6 +375,10 @@
                 top: var(--top);
 
                 z-index: 3;
+            }
+
+            &_hidden {
+                opacity: 0;
             }
         }
     }

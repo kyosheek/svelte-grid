@@ -4,7 +4,6 @@
     export let rows = 4, columns = 4;
 
     let gridSize = rows * columns;
-    let matrix = new Array(gridSize).fill(null);
     let mousePos = {
         x: null,
         y: null
@@ -18,10 +17,11 @@
     let mouse = {
         cursor: 'default',
         grabbing: false,
-        stretching: false
+        stretching: false,
+        dragOffset: 40
     };
 
-    let itemsProps = matrix.map((_, idx) => {
+    let itemsProps = new Array(gridSize).fill(null).map((_, idx) => {
         let row = 0;
         while ((row * columns) + columns <= idx) row++;
         let col = idx % columns;
@@ -87,29 +87,193 @@
         [ itemsProps[grabbedIdx], itemsProps[previewIdx] ] = [ newGrabbedItemProps, newPreviewItemProps ];
     }
 
+    const startGrabbing = (evt, idx) => {
+        resizeChildren();
+
+        const {
+            clientX,
+            clientY
+        } = evt;
+
+        grabPos = {
+            x: clientX,
+            y: clientY
+        };
+
+        mouse = {
+            ...mouse,
+            cursor: 'grabbing',
+            grabbing: true
+        };
+
+        grabbedIdx = idx;
+        itemsProps[idx].grabbed = true;
+    }
+
+    const isOverlapping = (firstProps, secondProps) => {
+        const firstColStart = firstProps.colStart;
+        const firstColEnd = firstProps.colEnd;
+        const firstRowStart = firstProps.rowStart;
+        const firstRowEnd = firstProps.rowEnd;
+
+        const secondColStart = secondProps.colStart;
+        const secondColEnd = secondProps.colEnd;
+        const secondRowStart = secondProps.rowStart;
+        const secondRowEnd = secondProps.rowEnd;
+
+        const isNoHorizontalOverlap = firstColStart >= secondColEnd || firstColEnd <= secondColStart;
+        const isNoVerticalOverlap = firstRowStart >= secondRowEnd || firstRowEnd <= secondRowStart;
+
+        return !isNoHorizontalOverlap && !isNoVerticalOverlap;
+    }
+
+    const hideOverlapped = (currentIdx) => {
+        itemsProps.forEach((itemProps, innerIdx) => {
+            if (itemProps.hidden || currentIdx === innerIdx) return;
+            if (isOverlapping(itemsProps[currentIdx], itemProps)) {
+                itemsProps[innerIdx] = {
+                    ...itemsProps[innerIdx],
+                    hidden: true
+                };
+            }
+        });
+    }
+
+    const hideOverlappedAndShowPreviouslyOverlapped = (currentIdx, oldProps) => {
+        itemsProps.forEach((itemProps, innerIdx) => {
+            if (innerIdx === currentIdx) return;
+            if (isOverlapping(oldProps, itemProps) && !isOverlapping(itemsProps[currentIdx], itemProps)) {
+                itemsProps[innerIdx] = {
+                    ...itemsProps[innerIdx],
+                    hidden: false
+                };
+            }
+            else if (isOverlapping(itemsProps[currentIdx], itemProps)) {
+                itemsProps[innerIdx] = {
+                    ...itemsProps[innerIdx],
+                    hidden: true
+                };
+            }
+        });
+    }
+
+    const stretchItemToLeft = (idx) => {
+        if (itemsProps[idx].colStart === 1) return;
+        itemsProps[idx] = {
+            ...itemsProps[idx],
+            colStart: itemsProps[idx].colStart - 1
+        };
+        hideOverlapped(idx);
+    }
+
+    const shrinkItemFromLeft = (idx) => {
+        if (!(itemsProps[idx].colStart === columns || itemsProps[idx].colStart + 1 === itemsProps[idx].colEnd)) {
+            const oldProps = Object.assign({}, itemsProps[idx]);
+            itemsProps[idx] = {
+                ...itemsProps[idx],
+                colStart: itemsProps[idx].colStart + 1
+            };
+            hideOverlappedAndShowPreviouslyOverlapped(idx, oldProps);
+        }
+    }
+
+    const stretchItemToRight = (idx) => {
+        if (itemsProps[idx].colEnd === columns + 1) return;
+        itemsProps[idx] = {
+            ...itemsProps[idx],
+            colEnd: itemsProps[idx].colEnd + 1
+        };
+        hideOverlapped(idx);
+    }
+
+    const shrinkItemFromRight = (idx) => {
+        if (!(itemsProps[idx].colEnd === 2 || itemsProps[idx].colEnd - 1 === itemsProps[idx].colStart)) {
+            const oldProps = Object.assign({}, itemsProps[idx]);
+            itemsProps[idx] = {
+                ...itemsProps[idx],
+                colEnd: itemsProps[idx].colEnd - 1
+            };
+            hideOverlappedAndShowPreviouslyOverlapped(idx, oldProps);
+        }
+    }
+
+    const stretchItemToTop = (idx) => {
+        if (itemsProps[idx].rowStart === 1) return;
+        itemsProps[idx] = {
+            ...itemsProps[idx],
+            rowStart: itemsProps[idx].rowStart - 1
+        };
+        hideOverlapped(idx);
+    }
+
+    const shrinkItemFromTop = (idx) => {
+        if (!(itemsProps[idx].rowStart === rows || itemsProps[idx].rowStart - 1 === itemsProps[idx].rowEnd)) {
+            const oldProps = Object.assign({}, itemsProps[idx]);
+            itemsProps[idx] = {
+                ...itemsProps[idx],
+                rowStart: itemsProps[idx].rowStart - 1
+            };
+            hideOverlappedAndShowPreviouslyOverlapped(idx, oldProps);
+        }
+    }
+
+    const stretchItemToBottom = (idx) => {
+        if (itemsProps[idx].rowEnd === rows + 1) return;
+        itemsProps[idx] = {
+            ...itemsProps[idx],
+            rowEnd: itemsProps[idx].rowEnd + 1
+        };
+        hideOverlapped(idx);
+    }
+
+    const shrinkItemFromBottom = (idx) => {
+        if (!(itemsProps[idx].rowEnd === 2 || itemsProps[idx].rowEnd - 1 === itemsProps[idx].rowStart)) {
+            const oldProps = Object.assign({}, itemsProps[idx]);
+            itemsProps[idx] = {
+                ...itemsProps[idx],
+                rowEnd: itemsProps[idx].rowEnd - 1
+            };
+            hideOverlappedAndShowPreviouslyOverlapped(idx, oldProps);
+        }
+    }
+
+    const resizeItemColumn = (evt, idx) => {
+        const node = children[idx];
+        const rect = node.getBoundingClientRect();
+        const x = evt.clientX - rect.left;
+
+        if (x < rect.width / 2) {
+            if (x < mouse.dragOffset / 2) stretchItemToLeft(idx);
+            else if (x < mouse.dragOffset) shrinkItemFromLeft(idx);
+        }
+        else {
+            if (x > (rect.width - mouse.dragOffset / 2)) stretchItemToRight(idx);
+            else if (x > (rect.width - mouse.dragOffset)) shrinkItemFromRight(idx);
+        }
+    }
+
+    const resizeItemRow = (evt, idx) => {
+        const node = children[idx];
+        const rect = node.getBoundingClientRect();
+        const y = evt.clientY - rect.top;
+
+        if (y < rect.height / 2) {
+            if (y < mouse.dragOffset / 2) stretchItemToTop(idx);
+            else if (y < mouse.dragOffset) shrinkItemFromTop(idx);
+        }
+        else {
+            if (y > (rect.height - mouse.dragOffset / 2)) stretchItemToBottom(idx);
+            else if (y > (rect.height - mouse.dragOffset)) shrinkItemFromBottom(idx);
+        }
+    }
+
     const mousedownHandler = (evt, idx) => {
         if ((evt.which || evt.button) === 1) {
             evt.preventDefault();
-            resizeChildren();
 
-            const {
-                clientX,
-                clientY
-            } = evt;
-
-            grabPos = {
-                x: clientX,
-                y: clientY
-            };
-
-            mouse = {
-                ...mouse,
-                cursor: 'grabbing',
-                grabbing: true
-            };
-
-            grabbedIdx = idx;
-            itemsProps[idx].grabbed = true;
+            if (mouse.cursor === 'grab') startGrabbing(evt, idx);
+            else if (mouse.cursor === 'col-resize') resizeItemColumn(evt, idx);
+            else if (mouse.cursor === 'row-resize') resizeItemRow(evt, idx);
         }
     }
 
@@ -156,7 +320,7 @@
             evt.preventDefault();
 
             for (let i = 0; i < itemsProps.length; i++) {
-                if (!itemsProps[i].hidden && grabbedIdx !== i) {
+                if (grabbedIdx !== i) {
                     const leftX = itemsProps[i].x;
                     const rightX = leftX + itemsProps[i].width;
                     const topY = itemsProps[i].y;
@@ -279,6 +443,7 @@
     {#each itemsProps as itemProps, idx}
         <GridItem bind:props={itemProps}
                   bind:mouse={mouse}
+                  {gridSize}
                   mousePos={mousePos}
                   grabPos={grabPos}
                   mousedownHandler={(evt) => mousedownHandler(evt, itemProps.idx)}
