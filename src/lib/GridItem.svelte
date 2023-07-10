@@ -8,17 +8,18 @@
     $: grabbed = props.grabbed;
     $: preview = props.preview;
     $: swapping = props.swapping;
-    $: gridArea = `${props.rowStart}/${props.colStart}/${props.rowEnd}/${props.colEnd}`;
+    $: stretching = props.stretching;
     $: isStretched = (props.colEnd - props.colStart > 1) || (props.rowEnd - props.rowStart > 1);
     let zIndex = props.idx + 1;
     $: {
         if (grabbed) zIndex = gridSize + 2;
-        else if (moving) zIndex = gridSize + 1;
+        else if (moving || stretching) zIndex = gridSize + 1;
         else if (props.hidden) zIndex = -1;
         else zIndex = props.idx + 1;
     }
 
-    export let mouseGrabbing, grabbed, preview, swapping, gridArea;
+    export let mouseGrabbing, grabbed, preview, swapping;
+    let gridArea = `${props.rowStart}/${props.colStart}/${props.rowEnd}/${props.colEnd}`;
 
     let card;
     let wasGrabbed = false;
@@ -26,15 +27,19 @@
     let tx = 0;
     let ty = 0;
     let moving = false;
-    let left = 0;
-    let top = 0;
-    let width = 0;
-    let height = 0;
+    let width = null;
+    let height = null;
+    let left = null;
+    let top = null;
+    let right = null;
+    let bottom = null;
 
     let animation = null;
     let clone = null;
 
-    const createAnimationProps = (from = null, to, fill = 'none') => {
+    const createTransformAnimationProps = (from, to, fill) => {
+        let keyframes = [], duration = 100;
+
         from = {
             x: from?.x ?? 0,
             y: from?.y ?? 0
@@ -44,20 +49,49 @@
             y: to?.y ?? 0
         };
 
-        const keyframes = [
+        keyframes = [
             { transform: `translate(${from.x}px, ${from.y}px)` },
             { transform: `translate(${to.x}px, ${to.y}px)` }
         ];
 
-        const d = {
-            x: from.x - to.x,
-            y: from.y - to.y
+        duration = Math.round(Math.sqrt(Math.pow((to.x - from.x), 2) + Math.pow((to.y - from.y), 2)) * 0.5);
+        const timing = { duration, iterations: 1, easing: 'linear', fill }
+
+        return { keyframes, timing };
+    }
+
+    const createSizeAnimationProps = (from, to, fill) => {
+        let keyframes = [], duration = 100;
+
+        from = {
+            width: from?.width ?? null,
+            height: from?.height ?? null
+        };
+        to = {
+            width: to?.width ?? null,
+            height: to?.height ?? null
         };
 
-        const duration = Math.round(Math.sqrt(Math.pow(d.x, 2) + Math.pow(d.y, 2)) * 0.5);
+        keyframes = [
+            { width: from.width + 'px', height: from.height + 'px' },
+            { width: to.width + 'px', height: to.height + 'px' }
+        ];
+
+        duration = Math.round(
+            Math.sqrt(
+                Math.pow(((to?.width ?? 0) - (from?.width ?? 0)), 2)
+                + Math.pow(((to?.height ?? 0) - (from?.height ?? 0)), 2)
+            ) * 0.666);
+
         const timing = { duration, iterations: 1, easing: 'linear', fill };
 
         return { keyframes, timing };
+    }
+
+    const createAnimationProps = (type, from = null, to, fill = 'none') => {
+        if (type === 'transform') return createTransformAnimationProps(from, to, fill);
+        else if (type === 'size') return createSizeAnimationProps(from, to, fill);
+        return false;
     }
 
     const cancelAnimation = (fixCard = true) => {
@@ -72,6 +106,7 @@
     }
 
     const swap = () => {
+        gridArea = `${props.rowStart}/${props.colStart}/${props.rowEnd}/${props.colEnd}`;
         if (wasGrabbed || animation?.playState !== 'finished') {
             cancelAnimation();
 
@@ -79,7 +114,7 @@
                 x: props.x - left,
                 y: props.y - top
             };
-            const { keyframes, timing } = createAnimationProps(null, to);
+            const { keyframes, timing } = createAnimationProps('transform', null, to);
 
             moving = true;
             animation = card.animate(keyframes, timing);
@@ -101,13 +136,15 @@
         }
     }
 
+    const cloneItem = () => {
+        clone = card.cloneNode();
+        clone.style.visibility = 'hidden';
+        card.parentElement.append(clone);
+    }
+
     const moveGrabbed = () => {
         if (!wasGrabbed) {
-            clone = card.cloneNode();
-            clone.style.visibility = 'hidden';
-            clone.style.width = props.width + 'px';
-            clone.style.height = props.height + 'px';
-            card.parentElement.append(clone);
+            cloneItem();
 
             wasGrabbed = true;
             const rect = card.getBoundingClientRect();
@@ -132,7 +169,7 @@
             x: props.previewX - props.x,
             y: props.previewY - props.y
         };
-        const { keyframes, timing } = createAnimationProps(null, to, 'forwards');
+        const { keyframes, timing } = createAnimationProps('transform', null, to, 'forwards');
 
         moving = true;
         animation = card.animate(keyframes, timing);
@@ -153,7 +190,7 @@
             x: matrix.e,
             y: matrix.f
         };
-        const { keyframes, timing } = createAnimationProps(from, null);
+        const { keyframes, timing } = createAnimationProps('transform', from, null);
 
         moving = true;
         tx = ty = 0;
@@ -247,6 +284,8 @@
     }
 
     export const resize = () => {
+        if (animation && !(animation.playState === 'finished')) return;
+
         const rect = card.getBoundingClientRect();
         props = {
             ...props,
@@ -255,7 +294,7 @@
             x: wasPreviewed ? props.x : rect.left,
             y: wasPreviewed ? props.y : rect.top
         };
-        ([ left, top ] = [ props.x, props.y ]);
+        ([ left, top, right, bottom, width, height ] = [ props.x, props.y, window.innerWidth - rect.right, window.innerHeight - rect.bottom, rect.width, rect.height ]);
     }
 
     onMount(() => resize());
@@ -307,6 +346,73 @@
 
     $: hidden = props.hidden || (hideEmpty && !props.content);
     export let hidden;
+
+    const stretchOrShrink = () => {
+        if (card && stretching) {
+            let newGridArea = `${props.rowStart}/${props.colStart}/${props.rowEnd}/${props.colEnd}`;
+            cloneItem();
+            clone.style.gridArea = newGridArea;
+            let newRect = clone.getBoundingClientRect();
+            let currentRect = card.getBoundingClientRect();
+
+            let newRight = null,
+                newLeft = null,
+                newTop = null,
+                newBottom = null;
+
+            if (newRect.left < currentRect.left || newRect.left > currentRect.left) {
+                newLeft = null;
+                newRight = window.innerWidth - newRect.right;
+            } else if (newRect.right > currentRect.right || newRect.right < currentRect.right) {
+                newLeft = newRect.left;
+                newRight = null;
+            }
+            else if (currentRect.left === newRect.left) {
+                newLeft = currentRect.left;
+                newRight = null;
+            }
+
+            if (newRect.top < currentRect.top || newRect.top > currentRect.top) {
+                newTop = null;
+                newBottom = window.innerHeight - newRect.bottom;
+            } else if (newRect.bottom > currentRect.bottom || newRect.bottom < currentRect.bottom) {
+                newTop = newRect.top;
+                newBottom = null;
+            }
+            else if (currentRect.top === newRect.top) {
+                newTop = currentRect.top;
+                newBottom = null;
+            }
+
+            const { keyframes, timing } = createAnimationProps('size',
+                {
+                    width: currentRect.width,
+                    height: currentRect.height
+                },
+                {
+                    width: newRect.width,
+                    height: newRect.height
+                });
+
+            // console.log({ newLeft, newTop, newRight, newBottom });
+
+            ([ left, top, right, bottom ] = [ newLeft, newTop, newRight, newBottom ]);
+            card.style.position = 'fixed';
+            animation = card.animate(keyframes, timing);
+            animation.onfinish = () => {
+                animation = null;
+                card.style.position = null;
+                gridArea = newGridArea;
+                props = {
+                    ...props,
+                    stretching: false
+                };
+                clone.remove();
+            }
+        }
+    }
+
+    $: (props.colStart || props.colEnd || props.rowStart || props.rowEnd) && stretchOrShrink();
 </script>
 
 <div bind:this={card}
@@ -314,13 +420,16 @@
      class:_kyoshee-svelte-grid_item_grabbed={grabbed}
      class:_kyoshee-svelte-grid_item_moving={moving}
      class:_kyoshee-svelte-grid_item_swapping={swapping}
+     class:_kyoshee-svelte-grid_item_stretching={stretching}
      class:_kyoshee-svelte-grid_item_hidden={hidden}
      style:grid-area={gridArea}
      style:z-index={zIndex}
-     style:--width={props.width + 'px'}
-     style:--height={props.height + 'px'}
-     style:--left={left + 'px'}
-     style:--top={top + 'px'}
+     style:--width={width ? (width + 'px') : width}
+     style:--height={height ? (height + 'px') : height}
+     style:--left={left ? (left + 'px') : left}
+     style:--top={top ? (top + 'px') : top}
+     style:--right={right ? (right + 'px') : right}
+     style:--bottom={bottom ? (bottom + 'px') : bottom}
      style:--tx={tx + 'px'}
      style:--ty={ty + 'px'}
      on:mousedown={handleMousedown}
@@ -357,7 +466,7 @@
             --default-transitions: border-color 200ms ease-in;
             transition: var(--default-transitions);
 
-            &:hover {
+            &:not(&_moving, &_swapping, &_stretching):hover {
                 transition-duration: 100ms;
                 transition-timing-function: ease-out;
                 border-color: var(--c-accent);
@@ -375,17 +484,18 @@
                 transition: var(--default-transitions), transform 50ms linear;
             }
 
-            &_grabbed, &_swapping {
+            &_grabbed, &_swapping, &_stretching {
                 position: fixed;
                 width: var(--width);
                 height: var(--height);
-                left: var(--left);
-                top: var(--top);
-
-                z-index: 3;
+                left: var(--left, unset);
+                top: var(--top, unset);
+                right: var(--right, unset);
+                bottom: var(--bottom, unset);
             }
 
             &_hidden {
+                animation: toOpacity;
                 opacity: 0;
             }
         }

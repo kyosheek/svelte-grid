@@ -3,7 +3,7 @@
     import TestIntoGrid from "./TestIntoGrid.svelte";
 
     let count = 100;
-    let exampleContent = new Array(3).fill(null).map(() => count++);
+    let exampleContent = new Array(15).fill(null).map(() => count++);
 
     const addContent = () => {
         exampleContent = [...exampleContent, count++ ];

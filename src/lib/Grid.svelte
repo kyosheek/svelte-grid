@@ -175,19 +175,23 @@
     }
 
     const canBeStretchedOrShrinked = (newProps) => {
-        let originalEqualCount = 4;
-        [ 'colStart', 'colEnd', 'rowStart', 'rowEnd' ].forEach(propName => {
-            const originalPropName = 'original' + propName.slice(0, 1).toUpperCase() + propName.slice(1);
-            if (newProps[propName] !== newProps[originalPropName]) originalEqualCount -= 1;
-        });
-        return originalEqualCount > 0;
+        let {
+            colStart, colEnd, rowStart, rowEnd,
+            originalColStart, originalColEnd, originalRowStart, originalRowEnd
+        } = newProps;
+
+        return colStart <= originalColStart
+            && colEnd >= originalColEnd
+            && rowStart <= originalRowStart
+            && rowEnd >= originalRowEnd;
     }
 
     const stretchItemToLeft = (idx) => {
         if (itemsProps[idx].colStart === 1) return;
         const newProps = {
             ...itemsProps[idx],
-            colStart: itemsProps[idx].colStart - 1
+            colStart: itemsProps[idx].colStart - 1,
+            stretching: true
         };
         if (!canBeStretchedOrShrinked(newProps)) return;
         itemsProps[idx] = newProps;
@@ -198,7 +202,8 @@
         if (!(itemsProps[idx].colStart === columns || itemsProps[idx].colStart + 1 === itemsProps[idx].colEnd)) {
             const newProps = {
                 ...itemsProps[idx],
-                colStart: itemsProps[idx].colStart + 1
+                colStart: itemsProps[idx].colStart + 1,
+                stretching: true
             };
             if (!canBeStretchedOrShrinked(newProps)) return;
             const oldProps = Object.assign({}, itemsProps[idx]);
@@ -211,8 +216,10 @@
         if (itemsProps[idx].colEnd === columns + 1) return;
         const newProps = {
             ...itemsProps[idx],
-            colEnd: itemsProps[idx].colEnd + 1
+            colEnd: itemsProps[idx].colEnd + 1,
+            stretching: true
         };
+
         if (!canBeStretchedOrShrinked(newProps)) return;
         itemsProps[idx] = newProps;
         hideOverlapped(idx);
@@ -222,7 +229,8 @@
         if (!(itemsProps[idx].colEnd === 2 || itemsProps[idx].colEnd - 1 === itemsProps[idx].colStart)) {
             const newProps = {
                 ...itemsProps[idx],
-                colEnd: itemsProps[idx].colEnd - 1
+                colEnd: itemsProps[idx].colEnd - 1,
+                stretching: true
             };
             if (!canBeStretchedOrShrinked(newProps)) return;
             const oldProps = Object.assign({}, itemsProps[idx]);
@@ -235,7 +243,8 @@
         if (itemsProps[idx].rowStart === 1) return;
         const newProps = {
             ...itemsProps[idx],
-            rowStart: itemsProps[idx].rowStart - 1
+            rowStart: itemsProps[idx].rowStart - 1,
+            stretching: true
         };
         if (!canBeStretchedOrShrinked(newProps)) return;
         itemsProps[idx] = newProps;
@@ -246,7 +255,8 @@
         if (!(itemsProps[idx].rowStart === rows || itemsProps[idx].rowStart - 1 === itemsProps[idx].rowEnd)) {
             const newProps = {
                 ...itemsProps[idx],
-                rowStart: itemsProps[idx].rowStart + 1
+                rowStart: itemsProps[idx].rowStart + 1,
+                stretching: true
             };
             if (!canBeStretchedOrShrinked(newProps)) return;
             const oldProps = Object.assign({}, itemsProps[idx]);
@@ -259,7 +269,8 @@
         if (itemsProps[idx].rowEnd === rows + 1) return;
         const newProps = {
             ...itemsProps[idx],
-            rowEnd: itemsProps[idx].rowEnd + 1
+            rowEnd: itemsProps[idx].rowEnd + 1,
+            stretching: true
         };
         if (!canBeStretchedOrShrinked(newProps)) return;
         itemsProps[idx] = newProps;
@@ -270,7 +281,8 @@
         if (!(itemsProps[idx].rowEnd === 2 || itemsProps[idx].rowEnd - 1 === itemsProps[idx].rowStart)) {
             const newProps = {
                 ...itemsProps[idx],
-                rowEnd: itemsProps[idx].rowEnd - 1
+                rowEnd: itemsProps[idx].rowEnd - 1,
+                stretching: true
             };
             if (!canBeStretchedOrShrinked(newProps)) return;
             const oldProps = Object.assign({}, itemsProps[idx]);
@@ -515,5 +527,7 @@
 
         --c-bg_card_empty: rgba(255, 255, 255, 0.05);
         --c-accent: #BBED0D;
+
+        box-sizing: border-box;
     }
 </style>
