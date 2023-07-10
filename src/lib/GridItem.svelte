@@ -37,50 +37,61 @@
     let animation = null;
     let clone = null;
 
-    const createAnimationProps = (from = null, to, fill = 'none') => {
+    const createTransformAnimationProps = (from, to, fill) => {
         let keyframes = [], duration = 100;
-        if (('x' in from || 'y' in from) && ('x' in to || 'y' in to)) {
-            from = {
-                x: from?.x ?? 0,
-                y: from?.y ?? 0
-            };
-            to = {
-                x: to?.x ?? 0,
-                y: to?.y ?? 0
-            };
 
-            keyframes = [
-                { transform: `translate(${from.x}px, ${from.y}px)` },
-                { transform: `translate(${to.x}px, ${to.y}px)` }
-            ];
+        from = {
+            x: from?.x ?? 0,
+            y: from?.y ?? 0
+        };
+        to = {
+            x: to?.x ?? 0,
+            y: to?.y ?? 0
+        };
 
-            duration = Math.round(Math.sqrt(Math.pow((to.x - from.x), 2) + Math.pow((to.y - from.y), 2)) * 0.5);
-        }
-        else if (('width' in from || 'height' in from) && ('width' in to || 'height' in to)) {
-            from = {
-                width: from?.width ?? null,
-                height: from?.height ?? null
-            };
-            to = {
-                width: to?.width ?? null,
-                height: to?.height ?? null
-            };
+        keyframes = [
+            { transform: `translate(${from.x}px, ${from.y}px)` },
+            { transform: `translate(${to.x}px, ${to.y}px)` }
+        ];
 
-            keyframes = [
-                { width: from.width + 'px', height: from.height + 'px' },
-                { width: to.width + 'px', height: to.height + 'px' }
-            ];
+        duration = Math.round(Math.sqrt(Math.pow((to.x - from.x), 2) + Math.pow((to.y - from.y), 2)) * 0.5);
+        const timing = { duration, iterations: 1, easing: 'linear', fill }
 
-            duration = Math.round(
-                Math.sqrt(
-                    Math.pow(((to?.width ?? 0) - (from?.width ?? 0)), 2)
-                    + Math.pow(((to?.height ?? 0) - (from?.height ?? 0)), 2)
-                ) * 0.666);
-        }
+        return { keyframes, timing };
+    }
+
+    const createSizeAnimationProps = (from, to, fill) => {
+        let keyframes = [], duration = 100;
+
+        from = {
+            width: from?.width ?? null,
+            height: from?.height ?? null
+        };
+        to = {
+            width: to?.width ?? null,
+            height: to?.height ?? null
+        };
+
+        keyframes = [
+            { width: from.width + 'px', height: from.height + 'px' },
+            { width: to.width + 'px', height: to.height + 'px' }
+        ];
+
+        duration = Math.round(
+            Math.sqrt(
+                Math.pow(((to?.width ?? 0) - (from?.width ?? 0)), 2)
+                + Math.pow(((to?.height ?? 0) - (from?.height ?? 0)), 2)
+            ) * 0.666);
 
         const timing = { duration, iterations: 1, easing: 'linear', fill };
 
         return { keyframes, timing };
+    }
+
+    const createAnimationProps = (type, from = null, to, fill = 'none') => {
+        if (type === 'transform') return createTransformAnimationProps(from, to, fill);
+        else if (type === 'size') return createSizeAnimationProps(from, to, fill);
+        return false;
     }
 
     const cancelAnimation = (fixCard = true) => {
@@ -103,7 +114,7 @@
                 x: props.x - left,
                 y: props.y - top
             };
-            const { keyframes, timing } = createAnimationProps(null, to);
+            const { keyframes, timing } = createAnimationProps('transform', null, to);
 
             moving = true;
             animation = card.animate(keyframes, timing);
@@ -158,7 +169,7 @@
             x: props.previewX - props.x,
             y: props.previewY - props.y
         };
-        const { keyframes, timing } = createAnimationProps(null, to, 'forwards');
+        const { keyframes, timing } = createAnimationProps('transform', null, to, 'forwards');
 
         moving = true;
         animation = card.animate(keyframes, timing);
@@ -179,7 +190,7 @@
             x: matrix.e,
             y: matrix.f
         };
-        const { keyframes, timing } = createAnimationProps(from, null);
+        const { keyframes, timing } = createAnimationProps('transform', from, null);
 
         moving = true;
         tx = ty = 0;
@@ -373,13 +384,15 @@
                 newBottom = null;
             }
 
-            const { keyframes, timing } = createAnimationProps({
-                width: currentRect.width,
-                height: currentRect.height
-            }, {
-                width: newRect.width,
-                height: newRect.height
-            });
+            const { keyframes, timing } = createAnimationProps('size',
+                {
+                    width: currentRect.width,
+                    height: currentRect.height
+                },
+                {
+                    width: newRect.width,
+                    height: newRect.height
+                });
 
             // console.log({ newLeft, newTop, newRight, newBottom });
 
